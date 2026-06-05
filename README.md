@@ -1,13 +1,13 @@
 # Hermit（隐士）
 
-Hermit 是一个面向 Windows 10/11 普通用户的本地化 AI 办公自动化部署包。它的目标是把 Python 运行环境、离线依赖、Hermes 桌面端配置和 AI Agent 可调用的 `.docx` 文档处理技能打包到一个可离线分发、可重复执行、可排障的项目中。
+Hermit 是一个面向 Windows 10/11 普通用户的本地化 AI 办公自动化部署包。它的目标是把 Python 运行环境、本地依赖包、Hermes 桌面端配置和 AI Agent 可调用的 `.docx` 文档处理技能打包到一个安装更快、更稳定、可重复执行、可排障的项目中。
 
-当前项目已完成工程骨架、文档、资源契约、安全 Word Skill、本机离线资源准备和 dry-run 安装流程；真实安装仍需在干净 Windows 环境验收。
+当前项目已完成工程骨架、文档、资源契约、安全 Word Skill、本机安装资源准备和 dry-run 安装流程；真实安装仍需在干净 Windows 环境验收。Hermit 的真实使用场景默认联网，后续会接入外部 API、Hermes 和移动端远程控制链路；本地化资源主要用于提升安装速度和稳定性。
 
 ## 核心目标
 
 - 一键安装：用户双击入口文件即可启动安装流程。
-- 尽量离线：安装过程从 `assets/` 读取本地安装包和 wheel 包。
+- 本地资源优先：安装过程从 `assets/` 读取本地安装包和 wheel 包，减少下载失败、网络波动和重复等待。
 - 幂等执行：重复运行不会破坏已安装环境或重复污染 PATH。
 - 配置安全：覆盖 Hermes 配置前必须备份，日志不得输出敏感值。
 - 文档安全：`.docx` 修改必须另存为修订版，绝不覆盖原文件。
@@ -48,13 +48,13 @@ Hermit_Project/
 | 资源校验脚本 | 已创建 | 见 `scripts/verify-assets.ps1` |
 | 安装入口 | 已创建 | 见 `一键唤醒隐士.bat` 和 `scripts/install.ps1` |
 | 完整安装流程 | 已实现 dry-run | 真实安装尚需在干净 Windows 环境验收 |
-| 本地离线资源 | 本机已准备 | Python、Hermes、wheels、config zip 已下载/生成；本地清单不提交 |
+| 本地安装资源 | 本机已准备 | Python、Hermes、wheels、config zip 已下载/生成；本地清单不提交 |
 
 ## 快速开始
 
 1. 阅读 `initPrompt.md` 了解项目方案。
 2. 阅读 `TODO.md` 按阶段推进。
-3. 按 `docs/installation.md` 准备离线资源。
+3. 按 `docs/installation.md` 准备本地安装资源。
 4. 运行 `scripts/verify-assets.ps1` 校验资源清单。
 5. 运行 `scripts/install.ps1 -DryRun` 验证安装计划，再在干净 Windows 环境做真实安装验收。
 
@@ -66,13 +66,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-在离线资源未准备完成前，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
+在本地安装资源未准备完成前，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
 ```
 
-本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地离线资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
+本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地安装资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
 
 安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
 

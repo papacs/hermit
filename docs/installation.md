@@ -1,6 +1,6 @@
-# Hermit 安装与离线资源准备
+# Hermit 安装与本地资源准备
 
-本文档描述 Hermit 的目标安装方式和离线资源准备流程。当前脚本已实现 dry-run 和安装流程编排；真实安装仍需在目标 Windows 环境完成验收。
+本文档描述 Hermit 的目标安装方式和本地安装资源准备流程。当前脚本已实现 dry-run 和安装流程编排；真实安装仍需在目标 Windows 环境完成验收。Hermit 的运行期默认联网，本地资源主要用于让安装更快、更稳定，并减少目标机器安装时的下载依赖。
 
 ## 目标安装流程
 
@@ -8,15 +8,15 @@
 2. bat 入口检查管理员权限，并在需要时触发 UAC 提权。
 3. bat 使用 `powershell.exe -NoProfile -ExecutionPolicy Bypass` 调用 `scripts/install.ps1`。
 4. `install.ps1` 初始化日志目录。
-5. `install.ps1` 调用 `scripts/verify-assets.ps1` 校验离线资源。
+5. `install.ps1` 调用 `scripts/verify-assets.ps1` 校验本地安装资源。
 6. 脚本检测 Windows、PowerShell、CPU 架构和 Python 版本。
-7. 脚本安装或复用 Python，并从 `assets/wheels/` 离线安装 Python 依赖。
+7. 脚本安装或复用 Python，并从 `assets/wheels/` 本地安装 Python 依赖。
 8. 脚本静默安装 Hermes 桌面端。
 9. 脚本备份现有 Hermes 配置，并注入 `assets/config/config_template.zip`。
 10. 脚本复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
 11. 脚本运行自检并输出结果。
 
-## 离线资源目录
+## 本地安装资源目录
 
 ```text
 assets/
@@ -52,7 +52,7 @@ py -3.11 -m pip download `
   python-docx
 ```
 
-目标机器安装依赖时必须使用：
+目标机器安装依赖时必须优先使用本地 wheel：
 
 ```powershell
 python -m pip install --no-index --find-links assets/wheels python-docx
@@ -91,7 +91,7 @@ assets/config/config_template.zip
 
 ## 本地清单策略
 
-为了兼顾离线部署和开源发布，Hermit 使用两套清单：
+为了兼顾本地资源加速安装和开源发布，Hermit 使用两套清单：
 
 - `assets/manifest.json` 和 `assets/checksums.sha256`：公开仓库中的 bootstrap 清单，默认 `packageReady=false`。
 - `assets/manifest.local.json` 和 `assets/checksums.local.sha256`：打包机器上的本地清单，记录真实安装包、wheel 包和配置模板哈希，默认被 `.gitignore` 排除。

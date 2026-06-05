@@ -53,7 +53,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 处理：
 
-- 按 `docs/installation.md` 准备离线资源。
+- 按 `docs/installation.md` 准备本地安装资源。
 - 打包机器上更新 `assets/manifest.local.json` 和 `assets/checksums.local.sha256`。
 - 公开仓库只更新 bootstrap 用的 `assets/manifest.json` 和 `assets/checksums.sha256`。
 

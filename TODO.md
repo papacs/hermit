@@ -1,6 +1,6 @@
 # Hermit 待办事项
 
-本文档按可交付顺序跟踪 Hermit 的推进状态。当前阶段是安装验收与开源发布准备：工程骨架、文档、资源契约、离线资源、安装 dry-run 和 Word Skill 已完成，下一步是真实 Windows 环境验收。
+本文档按可交付顺序跟踪 Hermit 的推进状态。当前阶段是安装验收与开源发布准备：工程骨架、文档、资源契约、本地安装资源、安装 dry-run 和 Word Skill 已完成，下一步是真实 Windows 环境验收。
 
 ## 进行中
 
@@ -15,7 +15,7 @@
 
 ## 下一步
 
-- [x] Phase 2：离线资源准备
+- [x] Phase 2：本地安装资源准备
   - [x] 下载 Python 3.11.9 Windows x64 安装包到 `assets/installers/`。
   - [x] 下载 Hermes 桌面端安装包到 `assets/installers/`。
   - [x] 使用 `pip download` 生成 `python-docx` 及其依赖 wheel 包。
@@ -33,7 +33,7 @@
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
   - [ ] 在真实 Windows 环境验证 Hermes `/S` 静默安装参数和重复安装行为。
-  - [ ] 在无网络环境中完成一次端到端验证。
+  - [ ] 在联网真实使用环境中完成一次端到端验证，包括外部 API、Hermes 和移动端远程控制链路。
 
 - [x] Phase 4：Word Skill
   - [x] 创建 `hermit_skills/docx_processor.py`。
@@ -58,7 +58,7 @@
   - [x] 添加 GitHub Actions Windows CI。
   - [x] 添加 `docs/open-source-release.md`。
   - [x] 初始化 git 仓库并创建首个提交。
-  - [ ] 确认 GitHub 仓库名、远程地址和默认分支。
+  - [ ] 推送到 GitHub 仓库 `git@github.com:papacs/hermit.git` 并确认默认分支。
 
 - [ ] Phase 5：验收与打包
   - [ ] 验证 Windows 10。
@@ -66,6 +66,7 @@
   - [ ] 验证未安装 Python 的干净环境。
   - [ ] 验证已有 Python 的环境。
   - [ ] 验证 Hermes 已安装且存在旧配置的环境。
+  - [ ] 验证联网真实使用链路，包括外部 API 凭据、Hermes 调用和移动端远程控制。
   - [ ] 生成可分发压缩包。
 
 ## 风险清单
@@ -74,5 +75,5 @@
 - `%LOCALAPPDATA%\hermes` 的真实配置结构需要在目标版本上确认；旧 `%APPDATA%\Hermes` 仅作为兼容备份路径。
 - `python-docx` 无法完整覆盖复杂 Word 格式，复杂内容需要拒绝修改或返回 warning。
 - 固定沙箱 `C:\HermitWorkspace` 在部分机器上可能需要管理员权限；安装脚本已提前创建并设置当前用户 ACL，仍需真实机器验收。
-- 当前尚未设置远程仓库，无法推送或打开 PR。
+- 真实使用依赖外部 API、Hermes 和移动端远程控制，验收时需要可联网环境和受控测试凭据。
 - Hermes 安装包可能不允许随开源仓库再分发，发布前必须确认授权。
