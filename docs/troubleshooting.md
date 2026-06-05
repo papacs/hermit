@@ -32,9 +32,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
 | --- | --- |
 | `0` | 成功，或 dry-run 安装计划验证通过 |
 | `1` | 校验、环境、安装器、配置或自检失败 |
-| `2` | 公开 bootstrap 清单未就绪，脚本未执行安装动作 |
+| `2` | 公开 bootstrap 清单未就绪，且联网准备被禁用或未执行 |
 
-如果从 GitHub 直接克隆仓库后运行安装，常见结果是退出码 `2`。公开仓库默认不包含安装器、wheel、本地清单和私有配置，需要使用带 `assets/manifest.local.json`、`assets/checksums.local.sha256`、安装器和 wheel 的本地安装包。
+如果从 GitHub 直接克隆仓库后运行安装，公开仓库默认不包含安装器、wheel、本地清单和私有配置。新版本安装器会默认联网运行 `scripts/prepare-assets.ps1` 准备资源；如果使用了 `-NoOnlineBootstrap`，则需要先手动准备 `assets/manifest.local.json`、`assets/checksums.local.sha256`、安装器和 wheel。
 
 ### 先验证安装计划
 
@@ -95,16 +95,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - 使用 `一键唤醒隐士.bat` 启动。
 - bat 应使用 `-ExecutionPolicy Bypass` 仅对当前进程绕过策略。
 
-### Python 版本过低
+### Python 版本不匹配
 
 现象：
 
-- 系统已有 Python，但版本小于 3.10。
+- 系统已有 Python，但不是 3.11。
+- 日志中出现 `Could not find a version that satisfies the requirement lxml`。
 
 处理：
 
-- 安装脚本会使用项目内 Python 3.11.9 安装包。
-- 如果选择系统级安装，脚本必须避免重复追加 PATH。
+- 当前本地 wheel 面向 CPython 3.11 / Windows x64，安装脚本会强制使用 Python 3.11 创建 venv。
+- 如果系统没有 Python 3.11，安装脚本会使用项目内 Python 3.11.9 安装包创建 Hermit 管理的 Python。
+- 不应使用 Python 3.10 创建 Hermit venv，否则 `lxml` 的 `cp311` wheel 不兼容。
 
 ### Python 依赖安装失败
 
@@ -118,6 +120,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - 新版本安装脚本会使用 `%LOCALAPPDATA%\Hermit\runtime\venv`，不会再向系统 Python 或用户全局 `site-packages` 写包。
 - 先运行 dry-run 确认日志中出现 `Python virtual environment` 和 `Would install Python packages into virtual environment`。
 - 确认 `assets/wheels/` 中存在 `python-docx`、`lxml` 和 `typing_extensions` 对应 wheel。
+
+### 只拉代码后资源缺失
+
+现象：
+
+- 日志显示 `Local package is not ready`。
+- 或安装器返回退出码 `2`。
+
+处理：
+
+- 保持联网，直接运行 `一键唤醒隐士.bat`，安装器会尝试自动准备本地资源。
+- 或手动运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
+```
+
+- 如果机器不能联网，需要从已准备好的机器复制 `assets/manifest.local.json`、`assets/checksums.local.sha256`、`assets/installers/`、`assets/wheels/` 和 `assets/config/config_template.zip`。
 
 ### 运行期配置未完成
 

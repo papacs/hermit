@@ -41,13 +41,13 @@ assets/
 assets/installers/python-3.11.9-amd64.exe
 ```
 
-安装脚本会优先复用已存在且版本满足要求的 Python 作为 bootstrap，用它创建 Hermit 专属虚拟环境。Python 依赖会安装到：
+安装脚本会优先复用已存在且版本满足要求的 Python 3.11 作为 bootstrap，用它创建 Hermit 专属虚拟环境。Python 依赖会安装到：
 
 ```text
 %LOCALAPPDATA%\Hermit\runtime\venv
 ```
 
-这不会写入系统 Python 或用户全局 `site-packages`。只有找不到 Python >= 3.10 时，才使用本地安装包安装一个 Hermit 管理的 Python：
+这不会写入系统 Python 或用户全局 `site-packages`。只有找不到 Python 3.11 时，才使用本地安装包安装一个 Hermit 管理的 Python：
 
 ```text
 %LOCALAPPDATA%\Hermit\runtime\Python311
@@ -167,6 +167,28 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-assets.ps
 - Python 3.11.9 Windows x64：`https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 - Hermes Desktop Windows：`https://hermes-assets.nousresearch.com/Hermes-Setup.exe`
 
+## 联网准备本地资源
+
+如果目标机器只从 GitHub 拉取源码，没有携带本地安装资源，可以在联网环境运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
+```
+
+该脚本会：
+
+- 下载 Python 3.11.9 Windows x64 安装包。
+- 下载 Hermes Desktop 安装包。
+- 使用 Python 3.11 下载 CPython 3.11 / Windows x64 wheels。
+- 生成 `assets/config/config_template.zip`。
+- 生成 `assets/manifest.local.json` 和 `assets/checksums.local.sha256`。
+
+`scripts/install.ps1` 默认会在发现 public bootstrap 清单未就绪时自动尝试运行该脚本。需要禁止联网准备时，传入：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -NoOnlineBootstrap
+```
+
 ## Dry-run 验证
 
 完整安装脚本支持 dry-run。该模式会执行资源校验、环境检查和安装计划生成，但不会运行安装器、不会写入 Hermes 配置、不会复制 Skill，也不会创建沙箱目录。
@@ -179,7 +201,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 - `0`：安装计划验证通过。
 - `1`：校验或环境错误。
-- `2`：公开 bootstrap 清单未就绪。
+- `2`：公开 bootstrap 清单未就绪，且禁用了联网准备或联网准备未执行。
 
 ## 日志与诊断
 

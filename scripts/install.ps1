@@ -7,6 +7,7 @@ param(
     [switch]$NoConfigPrompt,
     [switch]$NoDefaultRuntimeConfig,
     [switch]$RequireRuntimeConfig,
+    [switch]$NoOnlineBootstrap,
     [string[]]$HermesSilentArgs = @("/S")
 )
 
@@ -130,7 +131,7 @@ function New-PythonRuntime {
 
 function Get-VenvPythonRuntime {
     if (Test-Path -LiteralPath $VenvPythonExe) {
-        if (Test-CommandSuccess -FilePath $VenvPythonExe -Arguments @("-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)")) {
+        if (Test-CommandSuccess -FilePath $VenvPythonExe -Arguments @("-c", "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 11) else 1)")) {
             return New-PythonRuntime -Exe $VenvPythonExe -Description "Hermit virtual environment"
         }
     }
@@ -148,7 +149,7 @@ function Get-BootstrapPythonRuntime {
         if ([System.IO.Path]::IsPathRooted($Candidate.Exe) -and -not (Test-Path -LiteralPath $Candidate.Exe)) {
             continue
         }
-        $ProbeArgs = @($Candidate.Args + @("-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"))
+        $ProbeArgs = @($Candidate.Args + @("-c", "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 11) else 1)"))
         if (Test-CommandSuccess -FilePath $Candidate.Exe -Arguments $ProbeArgs) {
             return New-PythonRuntime -Exe $Candidate.Exe -Args $Candidate.Args -Description $Candidate.Description
         }
@@ -194,17 +195,25 @@ function Install-PythonRuntime {
     if ($null -ne $Python) {
         $CommandParts = @($Python.Exe) + @($Python.Args)
         $CommandText = ($CommandParts -join " ").Trim()
-        Write-Log "Python >= 3.10 detected through '$CommandText' ($($Python.Description))."
+        Write-Log "Python 3.11 detected through '$CommandText' ($($Python.Description))."
         return $Python
     }
 
     $PythonInstaller = Get-ManifestItem -Items $Manifest.requiredInstallers -Id "python"
     if ($null -eq $PythonInstaller) {
+        if ($DryRun) {
+            Write-Log -Level "DRYRUN" -Message "Would require Python 3.11 installer if no Python 3.11 runtime is available."
+            return New-PythonRuntime -Exe $ManagedPythonExe -Description "Hermit managed Python"
+        }
         Stop-Install -Message "Manifest does not define required python installer" -ExitCode 1
     }
 
     $InstallerPath = Resolve-RepoPath -RelativePath $PythonInstaller.path
     if (-not (Test-Path -LiteralPath $InstallerPath)) {
+        if ($DryRun) {
+            Write-Log -Level "DRYRUN" -Message "Would use Python installer: $($PythonInstaller.path)"
+            return New-PythonRuntime -Exe $ManagedPythonExe -Description "Hermit managed Python"
+        }
         Stop-Install -Message "Python installer not found: $($PythonInstaller.path)" -ExitCode 1
     }
 
@@ -219,7 +228,7 @@ function Install-PythonRuntime {
         "Shortcuts=0"
     )
 
-    Write-Log "Python >= 3.10 not detected. Installing managed Python under Hermit runtime."
+    Write-Log "Python 3.11 not detected. Installing managed Python under Hermit runtime."
     if ($DryRun) {
         Write-Log -Level "DRYRUN" -Message "Would run: $InstallerPath $($PythonArgs -join ' ')"
         return New-PythonRuntime -Exe $ManagedPythonExe -Description "Hermit managed Python"
@@ -232,7 +241,7 @@ function Install-PythonRuntime {
 
     $Python = Get-BootstrapPythonRuntime
     if ($null -eq $Python) {
-        Stop-Install -Message "Python installation completed but Python >= 3.10 was not detected" -ExitCode 1
+        Stop-Install -Message "Python installation completed but Python 3.11 was not detected" -ExitCode 1
     }
     return $Python
 }
@@ -458,6 +467,57 @@ function Configure-RuntimeSecrets {
     Stop-Install -Message "Runtime config setup failed with exit code $ExitCode" -ExitCode 1
 }
 
+function Invoke-AssetVerification {
+    param([string]$AssetChecksumFile)
+
+    Write-Log "Running local asset verification"
+    Write-Log "Manifest file: $ManifestFile"
+    Write-Log "Checksum file: $AssetChecksumFile"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $AssetChecksumFile -LogFile $LogFile
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Install -Message "Asset verification failed with exit code $LASTEXITCODE" -ExitCode 1
+    }
+}
+
+function Read-ManifestFile {
+    param([string]$Path)
+
+    try {
+        return Get-Content -Raw -Encoding UTF8 -LiteralPath $Path | ConvertFrom-Json
+    }
+    catch {
+        Stop-Install -Message "Manifest JSON parse failed: $($_.Exception.Message)" -ExitCode 1
+    }
+}
+
+function Prepare-LocalAssetsOnline {
+    $PrepareScript = Join-Path $RepoRoot "scripts\prepare-assets.ps1"
+    if (-not (Test-Path -LiteralPath $PrepareScript)) {
+        Stop-Install -Message "Local package is not ready and scripts/prepare-assets.ps1 is missing" -ExitCode 1
+    }
+
+    $PrepareArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $PrepareScript)
+    if ($DryRun) {
+        Write-Log -Level "DRYRUN" -Message "Would run online local asset preparation."
+        & powershell.exe @($PrepareArgs + @("-DryRun")) 2>&1 | ForEach-Object {
+            Write-Log -Message ("prepare-assets: {0}" -f ([string]$_))
+        }
+        if ($LASTEXITCODE -ne 0) {
+            Stop-Install -Message "Online asset preparation dry-run failed with exit code $LASTEXITCODE" -ExitCode 1
+        }
+        return $false
+    }
+
+    Write-Log -Level "WARN" -Message "Local package is not ready. Attempting online asset preparation."
+    & powershell.exe @PrepareArgs 2>&1 | ForEach-Object {
+        Write-Log -Message ("prepare-assets: {0}" -f ([string]$_))
+    }
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Install -Message "Online asset preparation failed with exit code $LASTEXITCODE" -ExitCode 1
+    }
+    return $true
+}
+
 function Test-InstallHealth {
     param([object]$Python)
 
@@ -517,19 +577,25 @@ try {
         Stop-Install -Message "Asset verification script not found: $VerifyScript" -ExitCode 1
     }
 
-    Write-Log "Running local asset verification"
-    Write-Log "Manifest file: $ManifestFile"
-    Write-Log "Checksum file: $ChecksumFile"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $ChecksumFile -LogFile $LogFile
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Install -Message "Asset verification failed with exit code $LASTEXITCODE" -ExitCode 1
-    }
+    Invoke-AssetVerification -AssetChecksumFile $ChecksumFile
+    $Manifest = Read-ManifestFile -Path $ManifestFile
 
-    try {
-        $Manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $ManifestFile | ConvertFrom-Json
-    }
-    catch {
-        Stop-Install -Message "Manifest JSON parse failed: $($_.Exception.Message)" -ExitCode 1
+    if ($Manifest.packageReady -ne $true) {
+        if (-not $NoOnlineBootstrap) {
+            $Prepared = Prepare-LocalAssetsOnline
+            if ($Prepared) {
+                $ManifestFile = $LocalManifestFile
+                $ChecksumFile = $LocalChecksumFile
+                if (-not (Test-Path -LiteralPath $ManifestFile)) {
+                    Stop-Install -Message "Online preparation did not create assets/manifest.local.json" -ExitCode 1
+                }
+                if (-not (Test-Path -LiteralPath $ChecksumFile)) {
+                    Stop-Install -Message "Online preparation did not create assets/checksums.local.sha256" -ExitCode 1
+                }
+                Invoke-AssetVerification -AssetChecksumFile $ChecksumFile
+                $Manifest = Read-ManifestFile -Path $ManifestFile
+            }
+        }
     }
 
     if ($Manifest.packageReady -ne $true) {

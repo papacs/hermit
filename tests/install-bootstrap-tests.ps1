@@ -17,9 +17,29 @@ $env:LOCALAPPDATA = $TempLocalAppData
 
 try {
     Write-Host "[TEST] Bootstrap manifest should stop install with exit code 2"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256")
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -NoOnlineBootstrap
     if ($LASTEXITCODE -ne 2) {
         throw "Expected bootstrap install to exit with code 2, got $LASTEXITCODE"
+    }
+
+    Write-Host "[TEST] Bootstrap dry-run should describe online preparation and still stop with exit code 2"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -DryRun
+    if ($LASTEXITCODE -ne 2) {
+        throw "Expected bootstrap dry-run install to exit with code 2, got $LASTEXITCODE"
+    }
+
+    $BootstrapDryRunLog = Get-ChildItem -LiteralPath (Join-Path $TempLocalAppData "Hermit\logs") -Filter "install-*.log" -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $BootstrapDryRunLog) {
+        throw "Expected bootstrap dry-run to create a log file"
+    }
+    $BootstrapDryRunLogText = Get-Content -Raw -Encoding UTF8 -LiteralPath $BootstrapDryRunLog.FullName
+    if ($BootstrapDryRunLogText -notmatch "Would run online local asset preparation") {
+        throw "Expected bootstrap dry-run log to include online preparation plan"
+    }
+    if ($BootstrapDryRunLogText -notmatch "prepare-assets: .*Would download Python installer") {
+        throw "Expected bootstrap dry-run log to include prepare-assets output"
     }
 
     Write-Host "[TEST] Ready manifest should complete dry-run install plan with exit code 0"
@@ -32,7 +52,7 @@ try {
 }
 "@ | Set-Content -Encoding UTF8 -LiteralPath $TempManifest
 
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums -DryRun -NoDefaultRuntimeConfig
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums -DryRun -NoDefaultRuntimeConfig -NoOnlineBootstrap
     if ($LASTEXITCODE -ne 0) {
         throw "Expected ready manifest dry-run to exit with code 0, got $LASTEXITCODE"
     }

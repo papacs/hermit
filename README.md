@@ -68,10 +68,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-从 GitHub 直接克隆的公开仓库不包含安装器、wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
+从 GitHub 直接克隆的公开仓库不包含安装器、wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会默认尝试联网运行 `scripts/prepare-assets.ps1`，下载官方安装包和 CPython 3.11 wheels，并生成本地 manifest/checksum。使用 `-NoOnlineBootstrap` 可禁用联网准备；禁用后缺资源会返回退出码 `2`。
+
+使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
+```
+
+手动联网准备本地安装资源：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
 ```
 
 本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地安装资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。

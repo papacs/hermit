@@ -10,6 +10,7 @@
   - [x] 创建安装说明、排障说明和 Word Skill 契约文档。
   - [x] 创建资源清单和配置示例骨架。
   - [x] 创建 PowerShell 资源校验脚本 `scripts/verify-assets.ps1`。
+  - [x] 创建联网准备本地资源脚本 `scripts/prepare-assets.ps1`。
   - [x] 创建安全安装入口骨架 `scripts/install.ps1`。
   - [x] 创建运行期密钥配置向导 `scripts/configure.ps1`。
   - [x] 创建日志采集脚本 `scripts/collect-logs.ps1`。
@@ -32,6 +33,8 @@
   - [x] 扩展 `scripts/install.ps1`，负责完整安装流程。
   - [x] 实现 Python 检测、配置备份、失败退出码、安装日志和 dry-run。
   - [x] 使用 `%LOCALAPPDATA%\Hermit\runtime\venv` 隔离 Python 依赖，避免污染系统 Python。
+  - [x] 要求 Python 3.11 创建 venv，匹配 CPython 3.11 wheels。
+  - [x] 在公开 bootstrap 清单未就绪时默认尝试联网准备本地资源。
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
   - [x] 支持运行期配置预置文件导入、`assets/config/config.json` 兼容、安装过程交互配置和配置缺失跳过。
