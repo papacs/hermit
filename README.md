@@ -90,7 +90,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.p
 
 - 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json` 并填入真实值；安装器会优先导入该本地文件。
 - 或使用兼容路径 `assets/config/config.json`；该文件也会被安装器自动导入。
-- 未提前配置时，真实安装过程会提示输入 API Key 和可选的微信/移动端远程控制参数。
+- 未提前配置时，真实安装过程会提示输入 API Key 和可选的 Hermes Gateway 个人微信远程控制参数。
 
 配置会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，该文件不应提交到仓库，日志也不会打印密钥值。也可安装后在 Hermit 项目根目录单独运行：
 
@@ -111,6 +111,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1 -NoProxy
 ```
+
+检测 Hermes Gateway 个人微信链路：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-hermes-wechat.ps1
+```
+
+如果 Hermes 实际运行在 VPS，请在 VPS 上运行 `hermes gateway status`、`hermes pairing list`，并使用 `hermes pairing approve weixin <配对码>` 批准普通微信用户。
 
 安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
 

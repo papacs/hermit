@@ -110,7 +110,7 @@ Hermit 支持“预配置优先、缺失则提示”的配置流程：
 
 1. 可提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`。
 2. 也可以使用兼容路径 `assets/config/config.json`。
-3. 在本地配置文件中填入外部 API Key、Base URL、微信/移动端远程控制参数。
+3. 在本地配置文件中填入外部 API Key、Base URL、Hermes Gateway 个人微信远程控制参数。
 4. `runtime.local.json` 和 `config.json` 会被 `.gitignore` 排除，不应提交到公开仓库。
 5. 安装脚本会优先导入 `assets/config/runtime.local.json`，其次导入 `assets/config/config.json`。
 6. 如果没有预配置文件，真实安装会提示用户输入配置。
@@ -136,6 +136,21 @@ Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
 ```
 
+验证 Hermes Gateway 个人微信配置：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-hermes-wechat.ps1
+```
+
+如果 Hermes Gateway 运行在 VPS 上，请在 VPS 上执行 Hermes 自带命令：
+
+```powershell
+hermes gateway status
+hermes pairing list
+hermes pairing approve weixin <配对码>
+```
+
 安装脚本相关参数：
 
 - `-RuntimeConfigFile <path>`：指定预配置文件。
@@ -151,7 +166,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
 %LOCALAPPDATA%\Hermit\config\runtime.secrets.json
 ```
 
-日志只记录配置状态，不打印 API Key、Token、Webhook secret 或完整配置内容。
+日志只记录配置状态，不打印 API Key、Token 或完整私有配置内容。
 
 ## 校验文件
 

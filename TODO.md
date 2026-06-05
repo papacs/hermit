@@ -38,6 +38,7 @@
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
   - [x] 支持运行期配置预置文件导入、`assets/config/config.json` 兼容、安装过程交互配置和配置缺失跳过。
+  - [x] 添加 Hermes Gateway 个人微信只读诊断脚本 `scripts/test-hermes-wechat.ps1`。
   - [ ] 在真实 Windows 环境验证 Hermes `/S` 静默安装参数和重复安装行为。
   - [ ] 在联网真实使用环境中完成一次端到端验证，包括外部 API、Hermes 和移动端远程控制链路。
 

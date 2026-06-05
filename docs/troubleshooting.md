@@ -172,7 +172,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Ins
 现象：
 
 - 日志中出现 `Runtime config not configured`。
-- 安装仍然完成，但后续外部 API 或移动端远程控制不可用。
+- 安装仍然完成，但后续外部 API 或 Hermes Gateway 个人微信远程控制不可用。
 
 处理：
 
@@ -184,7 +184,35 @@ Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 ```
 
-配置文件会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`。日志不应包含 API Key、Token 或 Webhook secret。
+配置文件会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`。日志不应包含 API Key、Token 或完整私有配置。
+
+### Hermes 个人微信配对/网关不可用
+
+现象：
+
+- 普通微信给 Hermes/ClawBot 发消息没有回复。
+- 首次发消息只收到配对码，尚未批准。
+- PC 上没有 `hermes` 命令，但 VPS 上 Hermes 可以正常使用。
+
+处理：
+
+- 如果 Hermes 实际运行在 VPS，应在 VPS 上检查：
+
+```powershell
+hermes gateway status
+hermes pairing list
+hermes pairing approve weixin <配对码>
+```
+
+- 如果要检查本机 Hermes 配置，进入 Hermit 项目根目录运行：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-hermes-wechat.ps1
+```
+
+- 该脚本只做只读检查，不复制或打印微信登录态、API Key、Token；会检查 `HERMES_HOME`、`%LOCALAPPDATA%\hermes`、`config.yaml`、`.env`、`gateway.json`、`pairing` 和近期日志。
+- 如果本机没有完整 Hermes CLI，但只是使用 VPS 上的 Hermes，这是正常的；在 VPS 上运行 Hermes 诊断命令即可。
 
 ### TCP 可连但 API 请求失败
 

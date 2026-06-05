@@ -16,5 +16,13 @@
   "hermit": {
     "skillsDirectory": "%USERPROFILE%\\Hermit_Skills",
     "logDirectory": "%LOCALAPPDATA%\\Hermit\\logs"
+  },
+  "remoteControl": {
+    "hermesGateway": {
+      "enabled": false,
+      "platform": "weixin",
+      "hermesHome": "%LOCALAPPDATA%\\hermes",
+      "requirePairingApproval": true
+    }
   }
 }

@@ -32,10 +32,11 @@ try {
     }
   },
   "remoteControl": {
-    "wechat": {
+    "hermesGateway": {
       "enabled": true,
-      "token": "wx-test-secret",
-      "webhookUrl": "https://wechat.example.test/hook"
+      "platform": "weixin",
+      "hermesHome": "%LOCALAPPDATA%\\hermes",
+      "requirePairingApproval": true
     }
   }
 }
@@ -50,12 +51,12 @@ try {
     }
 
     $InstalledText = Get-Content -Raw -Encoding UTF8 -LiteralPath $InstalledConfig
-    if ($InstalledText -notmatch "sk-test-secret" -or $InstalledText -notmatch "wx-test-secret") {
-        throw "Expected installed config to contain provided secret values"
+    if ($InstalledText -notmatch "sk-test-secret" -or $InstalledText -notmatch "hermesGateway") {
+        throw "Expected installed config to contain provided runtime values"
     }
 
     $LogText = Get-Content -Raw -Encoding UTF8 -LiteralPath $TempLogFile
-    if ($LogText -match "sk-test-secret" -or $LogText -match "wx-test-secret") {
+    if ($LogText -match "sk-test-secret") {
         throw "Configure log leaked a secret value"
     }
     if ($LogText -notmatch "Runtime config written") {

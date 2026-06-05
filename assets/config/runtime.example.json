@@ -8,10 +8,11 @@
     }
   },
   "remoteControl": {
-    "wechat": {
+    "hermesGateway": {
       "enabled": false,
-      "token": "",
-      "webhookUrl": ""
+      "platform": "weixin",
+      "hermesHome": "%LOCALAPPDATA%\\hermes",
+      "requirePairingApproval": true
     }
   }
 }

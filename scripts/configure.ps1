@@ -140,14 +140,21 @@ function New-PromptedConfig {
         return $null
     }
 
-    $WechatEnabledInput = Read-Host -Prompt "Configure mobile/WeChat remote control now? [y/N]"
-    $WechatEnabled = $WechatEnabledInput -match "^(y|yes)$"
-    $WechatWebhookUrl = ""
-    $WechatToken = ""
+    $GatewayEnabledInput = Read-Host -Prompt "Configure Hermes Gateway personal Weixin remote control now? [y/N]"
+    $GatewayEnabled = $GatewayEnabledInput -match "^(y|yes)$"
+    $GatewayPlatform = "weixin"
+    $GatewayHome = "%LOCALAPPDATA%\hermes"
 
-    if ($WechatEnabled) {
-        $WechatWebhookUrl = Read-Host -Prompt "WeChat/webhook URL (optional)"
-        $WechatToken = Read-OptionalSecret -Prompt "WeChat/token secret (input hidden, optional)"
+    if ($GatewayEnabled) {
+        $GatewayPlatformInput = Read-Host -Prompt "Hermes Gateway platform [weixin]"
+        if (-not [string]::IsNullOrWhiteSpace($GatewayPlatformInput)) {
+            $GatewayPlatform = $GatewayPlatformInput
+        }
+
+        $GatewayHomeInput = Read-Host -Prompt "Hermes home [%LOCALAPPDATA%\hermes]"
+        if (-not [string]::IsNullOrWhiteSpace($GatewayHomeInput)) {
+            $GatewayHome = $GatewayHomeInput
+        }
     }
 
     $ProviderConfig = [ordered]@{
@@ -165,10 +172,11 @@ function New-PromptedConfig {
         source = "prompt"
         providers = $Providers
         remoteControl = [ordered]@{
-            wechat = [ordered]@{
-                enabled = $WechatEnabled
-                webhookUrl = $WechatWebhookUrl
-                token = $WechatToken
+            hermesGateway = [ordered]@{
+                enabled = $GatewayEnabled
+                platform = $GatewayPlatform
+                hermesHome = $GatewayHome
+                requirePairingApproval = $true
             }
         }
     }
