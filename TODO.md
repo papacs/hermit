@@ -24,7 +24,7 @@
   - [x] 生成无密钥 `assets/config/config_template.zip`。
   - [x] 生成本机本地清单 `assets/manifest.local.json`。
   - [x] 生成本机本地哈希 `assets/checksums.local.sha256`。
-  - [x] 保持公开 `assets/manifest.json` 为 bootstrap 状态，避免开源仓库误提交二进制资源。
+  - [x] 将公开 `assets/manifest.json` / `assets/checksums.sha256` 更新为离线就绪状态，仅提交白名单固定资源。
 
 - [ ] Phase 3：安装脚本
   - [x] 创建 `一键唤醒隐士.bat`，负责 UAC 提权和调用 PowerShell。
@@ -34,7 +34,7 @@
   - [x] 实现 Python 检测、配置备份、失败退出码、安装日志和 dry-run。
   - [x] 使用 `%LOCALAPPDATA%\Hermit\runtime\venv` 隔离 Python 依赖，避免污染系统 Python。
   - [x] 要求 Python 3.11 创建 venv，匹配 CPython 3.11 wheels。
-  - [x] 在公开 bootstrap 清单未就绪时默认尝试联网准备本地资源。
+  - [x] 公开离线资源未就绪时仍可默认尝试联网准备本地资源。
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
   - [x] 支持运行期配置预置文件导入、`assets/config/config.json` 兼容、安装过程交互配置和配置缺失跳过。
@@ -55,7 +55,7 @@
   - [x] 创建 `tests/test_docx_processor.py`。
 
 - [ ] Phase 4.5：开源项目准备
-  - [x] 添加 `.gitignore`，排除安装包、wheel、密钥、日志和构建产物。
+  - [x] 添加 `.gitignore`，排除密钥、日志、构建产物和非白名单本地资源。
   - [x] 添加 `LICENSE`。
   - [x] 添加 `SECURITY.md`。
   - [x] 添加 `CONTRIBUTING.md`。

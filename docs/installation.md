@@ -145,7 +145,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1 -C
 
 为了兼顾本地资源加速安装和开源发布，Hermit 使用两套清单：
 
-- `assets/manifest.json` 和 `assets/checksums.sha256`：公开仓库中的 bootstrap 清单，默认 `packageReady=false`。
+- `assets/manifest.json` 和 `assets/checksums.sha256`：公开仓库中的离线 bootstrap 清单，默认 `packageReady=true`，覆盖已提交的安装器、wheel 和配置模板。
 - `assets/manifest.local.json` 和 `assets/checksums.local.sha256`：打包机器上的本地清单，记录真实安装包、wheel 包和配置模板哈希，默认被 `.gitignore` 排除。
 
 `scripts/install.ps1` 会优先使用本地清单；如果本地清单不存在，则回退到公开 bootstrap 清单。
@@ -167,9 +167,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-assets.ps
 - Python 3.11.9 Windows x64：`https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 - Hermes Desktop Windows：`https://hermes-assets.nousresearch.com/Hermes-Setup.exe`
 
-## 联网准备本地资源
+## 联网刷新本地资源
 
-如果目标机器只从 GitHub 拉取源码，没有携带本地安装资源，可以在联网环境运行：
+公开仓库已经携带默认离线安装资源。只有需要刷新安装器、wheel 或本地 manifest/checksum 时，才需要在联网环境运行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
@@ -183,7 +183,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.p
 - 生成 `assets/config/config_template.zip`。
 - 生成 `assets/manifest.local.json` 和 `assets/checksums.local.sha256`。
 
-`scripts/install.ps1` 默认会在发现 public bootstrap 清单未就绪时自动尝试运行该脚本。需要禁止联网准备时，传入：
+`scripts/install.ps1` 只有在当前 manifest 标记为未就绪时才会尝试运行该脚本。需要禁止联网准备时，传入：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -NoOnlineBootstrap
@@ -201,7 +201,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 - `0`：安装计划验证通过。
 - `1`：校验或环境错误。
-- `2`：公开 bootstrap 清单未就绪，且禁用了联网准备或联网准备未执行。
+- `2`：当前 manifest 未就绪，且禁用了联网准备或联网准备未执行。
 
 ## 日志与诊断
 

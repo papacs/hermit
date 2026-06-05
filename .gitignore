@@ -29,6 +29,10 @@ assets/checksums.local.sha256
 !assets/installers/python-3.11.9-amd64.exe
 !assets/installers/hermes-desktop-setup.exe
 !assets/wheels/.gitkeep
+!assets/wheels/python_docx-1.2.0-py3-none-any.whl
+!assets/wheels/lxml-6.1.1-cp311-cp311-win_amd64.whl
+!assets/wheels/typing_extensions-4.15.0-py3-none-any.whl
+!assets/config/config_template.zip
 
 # Secrets and local config
 *.secret.*
@@ -42,6 +46,7 @@ dist/
 build/
 *.zip
 *.7z
+!assets/config/config_template.zip
 
 # OS/editor
 Thumbs.db

@@ -32,9 +32,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
 | --- | --- |
 | `0` | 成功，或 dry-run 安装计划验证通过 |
 | `1` | 校验、环境、安装器、配置或自检失败 |
-| `2` | 公开 bootstrap 清单未就绪，且联网准备被禁用或未执行 |
+| `2` | 当前 manifest 未就绪，且联网准备被禁用或未执行 |
 
-如果从 GitHub 直接克隆仓库后运行安装，公开仓库已包含固定版本的 Python/Hermes 安装器，但默认不包含 wheel、本地清单和私有配置。安装器会默认联网运行 `scripts/prepare-assets.ps1` 补齐资源；如果使用了 `-NoOnlineBootstrap`，则需要先手动准备 `assets/manifest.local.json`、`assets/checksums.local.sha256`、wheel 和配置模板。
+如果从 GitHub 直接克隆仓库后运行安装，公开仓库已包含固定版本的 Python/Hermes 安装器、CPython 3.11 wheels 和无密钥配置模板。正常情况下不会再联网下载 wheel；只有当前 manifest 被改成未就绪，或资源被删除/校验失败时，才需要运行 `scripts/prepare-assets.ps1` 重新准备资源。
 
 ### 先验证安装计划
 
@@ -137,7 +137,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
 ```
 
-- 如果机器不能联网，需要从已准备好的机器复制 `assets/manifest.local.json`、`assets/checksums.local.sha256`、`assets/installers/`、`assets/wheels/` 和 `assets/config/config_template.zip`。
+- 如果机器不能联网，直接使用仓库已提交的公开离线资源；如需使用自定义资源包，再从已准备好的机器复制 `assets/manifest.local.json`、`assets/checksums.local.sha256`、`assets/installers/`、`assets/wheels/` 和 `assets/config/config_template.zip`。
 
 ### 运行期配置未完成
 

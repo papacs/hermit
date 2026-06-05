@@ -2,3 +2,7 @@
 # <sha256>  <relative-path>
 5ee42c4eee1e6b4464bb23722f90b45303f79442df63083f05322f1785f5fdde  assets/installers/python-3.11.9-amd64.exe
 de1de2a339ce52f25fe85cf5098e25269180a3c40d5c26ef4433a2caef58ff91  assets/installers/hermes-desktop-setup.exe
+3fd478f3250fbbbfd3b94fe1e985955737c145627498896a8a6bf81f4baf66c7  assets/wheels/python_docx-1.2.0-py3-none-any.whl
+abbefa31eee84842140f67acef1c828e28bba8bbf0c3bc6e5492a9af88152c28  assets/wheels/lxml-6.1.1-cp311-cp311-win_amd64.whl
+f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548  assets/wheels/typing_extensions-4.15.0-py3-none-any.whl
+cda23bd720fdb251029807a5b9a917f1e1051837b3a44b977ae6439761596378  assets/config/config_template.zip

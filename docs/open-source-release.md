@@ -5,11 +5,12 @@ Hermit is intended to be published as an open-source local automation tool. Befo
 ## Repository Hygiene
 
 - Initialize git only after confirming the final repository name and remote.
-- Keep `assets/installers/`, `assets/wheels/`, `assets/config/config_template.zip`, `assets/config/runtime.local.json`, `assets/config/config.json`, logs, diagnostics, and local secrets out of git.
-- Confirm `.gitignore` excludes private binaries and generated packages.
+- Keep runtime secrets, local manifests, logs, diagnostics, and user documents out of git.
+- Confirm `.gitignore` excludes private/generated assets while explicitly allowing only pinned public bootstrap assets.
 - Confirm `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `README.md` are present.
 - Confirm no real API keys, Slack tokens, cookies, private URLs, or user documents are committed.
-- Confirm `assets/manifest.local.json`, `assets/checksums.local.sha256`, installers, wheels, `config_template.zip`, `runtime.local.json`, and `config.json` are not committed.
+- Confirm `assets/manifest.local.json`, `assets/checksums.local.sha256`, `assets/config/runtime.local.json`, and `assets/config/config.json` are not committed.
+- Confirm committed installers, wheels, and `assets/config/config_template.zip` match the public `assets/checksums.sha256` records.
 
 ## Legal And Redistribution
 
@@ -31,7 +32,7 @@ Hermit is intended to be published as an open-source local automation tool. Befo
 
 - Documentation and project skeleton.
 - Resource verification script.
-- Install bootstrap script that safely refuses to install while `packageReady=false`.
+- Offline-ready install bootstrap using pinned public installers, wheels, and config template.
 - Safe Word Skill with tests.
 - CI workflow for Windows.
 

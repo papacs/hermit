@@ -113,8 +113,20 @@ function Invoke-NativeCommand {
         [string[]]$Arguments
     )
 
-    $Output = & $FilePath @Arguments 2>&1
-    $ExitCode = $LASTEXITCODE
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $Output = & $FilePath @Arguments 2>&1
+        $ExitCode = $LASTEXITCODE
+    }
+    catch {
+        Write-Info ("Failed to start command {0}: {1}" -f $FilePath, $_.Exception.Message)
+        return 1
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+
     foreach ($Line in $Output) {
         if (-not [string]::IsNullOrWhiteSpace([string]$Line)) {
             Write-Info ([string]$Line)

@@ -68,7 +68,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-从 GitHub 直接克隆的公开仓库已包含固定版本的 Python/Hermes 安装器，但不包含 wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会默认尝试联网运行 `scripts/prepare-assets.ps1`，补齐 CPython 3.11 wheels，并生成本地 manifest/checksum。使用 `-NoOnlineBootstrap` 可禁用联网准备；禁用后缺资源会返回退出码 `2`。
+从 GitHub 直接克隆的公开仓库已包含固定版本的 Python/Hermes 安装器、CPython 3.11 wheels 和无密钥配置模板；不包含真实 API Key、微信/移动端远程控制参数等私有配置。默认情况下可以直接离线执行安装计划；只有当资源被删除或需要刷新版本时，才需要联网运行 `scripts/prepare-assets.ps1` 重建本地 manifest/checksum。
 
 使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 
@@ -76,13 +76,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
 ```
 
-手动联网准备本地安装资源：
+手动联网刷新本地安装资源：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.ps1
 ```
 
-本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地安装资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
+`scripts/install.ps1` 会优先读取 `assets/manifest.local.json` 和 `assets/checksums.local.sha256`；未发现本地清单时回退到已提交的公开离线清单。真实密钥和本地覆盖配置仍被 `.gitignore` 排除，不应提交到公开仓库。
 
 运行期密钥和远程控制配置支持三种方式：
 
@@ -119,4 +119,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
 - 发布检查：见 `docs/open-source-release.md`。
 - CI：见 `.github/workflows/ci.yml`。
 
-公开仓库不应包含私有安装包、wheel 缓存、真实配置模板、日志、诊断包或用户文档。
+公开仓库不应包含真实 API Key、Token、Cookie、日志、诊断包或用户文档。

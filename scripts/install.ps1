@@ -163,8 +163,20 @@ function Invoke-NativeCommand {
         [string[]]$Arguments
     )
 
-    $Output = & $FilePath @Arguments 2>&1
-    $ExitCode = $LASTEXITCODE
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $Output = & $FilePath @Arguments 2>&1
+        $ExitCode = $LASTEXITCODE
+    }
+    catch {
+        Write-Log -Level "ERROR" -Message ("Failed to start command {0}: {1}" -f $FilePath, $_.Exception.Message)
+        return 1
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+
     foreach ($Line in $Output) {
         if (-not [string]::IsNullOrWhiteSpace([string]$Line)) {
             Write-Log -Level "CMD" -Message ([string]$Line)
@@ -363,9 +375,9 @@ function Install-HermesConfig {
 
     $HermesHome = Join-Path $LocalAppData "hermes"
     $LegacyHermesConfig = Join-Path $AppData "Hermes"
-    Backup-Directory -SourcePath $HermesHome -Name "hermes"
+    $null = Backup-Directory -SourcePath $HermesHome -Name "hermes"
     if (Test-Path -LiteralPath $LegacyHermesConfig) {
-        Backup-Directory -SourcePath $LegacyHermesConfig -Name "Hermes-legacy"
+        $null = Backup-Directory -SourcePath $LegacyHermesConfig -Name "Hermes-legacy"
     }
 
     if ($DryRun) {
@@ -490,6 +502,31 @@ function Read-ManifestFile {
     }
 }
 
+function Invoke-PrepareAssetsScript {
+    param([string[]]$Arguments)
+
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $Output = & powershell.exe @Arguments 2>&1
+        $ExitCode = $LASTEXITCODE
+    }
+    catch {
+        Write-Log -Level "ERROR" -Message ("Failed to start prepare-assets: {0}" -f $_.Exception.Message)
+        return 1
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+
+    foreach ($Line in $Output) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$Line)) {
+            Write-Log -Message ("prepare-assets: {0}" -f ([string]$Line))
+        }
+    }
+    return [int]$ExitCode
+}
+
 function Prepare-LocalAssetsOnline {
     $PrepareScript = Join-Path $RepoRoot "scripts\prepare-assets.ps1"
     if (-not (Test-Path -LiteralPath $PrepareScript)) {
@@ -499,21 +536,17 @@ function Prepare-LocalAssetsOnline {
     $PrepareArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $PrepareScript)
     if ($DryRun) {
         Write-Log -Level "DRYRUN" -Message "Would run online local asset preparation."
-        & powershell.exe @($PrepareArgs + @("-DryRun")) 2>&1 | ForEach-Object {
-            Write-Log -Message ("prepare-assets: {0}" -f ([string]$_))
-        }
-        if ($LASTEXITCODE -ne 0) {
-            Stop-Install -Message "Online asset preparation dry-run failed with exit code $LASTEXITCODE" -ExitCode 1
+        $ExitCode = Invoke-PrepareAssetsScript -Arguments @($PrepareArgs + @("-DryRun"))
+        if ($ExitCode -ne 0) {
+            Stop-Install -Message "Online asset preparation dry-run failed with exit code $ExitCode" -ExitCode 1
         }
         return $false
     }
 
     Write-Log -Level "WARN" -Message "Local package is not ready. Attempting online asset preparation."
-    & powershell.exe @PrepareArgs 2>&1 | ForEach-Object {
-        Write-Log -Message ("prepare-assets: {0}" -f ([string]$_))
-    }
-    if ($LASTEXITCODE -ne 0) {
-        Stop-Install -Message "Online asset preparation failed with exit code $LASTEXITCODE" -ExitCode 1
+    $ExitCode = Invoke-PrepareAssetsScript -Arguments $PrepareArgs
+    if ($ExitCode -ne 0) {
+        Stop-Install -Message "Online asset preparation failed with exit code $ExitCode" -ExitCode 1
     }
     return $true
 }

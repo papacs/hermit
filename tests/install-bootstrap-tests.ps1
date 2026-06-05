@@ -4,6 +4,7 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $InstallScript = Join-Path $RepoRoot "scripts\install.ps1"
 $TempDir = Join-Path $RepoRoot "tests\.tmp-install"
 $TempManifest = Join-Path $TempDir "manifest.ready.json"
+$TempNotReadyManifest = Join-Path $TempDir "manifest.not-ready.json"
 $TempChecksums = Join-Path $TempDir "checksums.ready.sha256"
 $TempLocalAppData = Join-Path $TempDir "localappdata"
 
@@ -16,16 +17,48 @@ $OriginalLocalAppData = $env:LOCALAPPDATA
 $env:LOCALAPPDATA = $TempLocalAppData
 
 try {
-    Write-Host "[TEST] Bootstrap manifest should stop install with exit code 2"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -NoOnlineBootstrap
-    if ($LASTEXITCODE -ne 2) {
-        throw "Expected bootstrap install to exit with code 2, got $LASTEXITCODE"
+    Write-Host "[TEST] Public manifest should complete offline dry-run install plan"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -DryRun -NoDefaultRuntimeConfig -NoOnlineBootstrap
+    if ($LASTEXITCODE -ne 0) {
+        throw "Expected public manifest dry-run to exit with code 0, got $LASTEXITCODE"
     }
 
-    Write-Host "[TEST] Bootstrap dry-run should describe online preparation and still stop with exit code 2"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -DryRun
+    $PublicLog = Get-ChildItem -LiteralPath (Join-Path $TempLocalAppData "Hermit\logs") -Filter "install-*.log" -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $PublicLog) {
+        throw "Expected public manifest dry-run to create a log file"
+    }
+    $PublicLogText = Get-Content -Raw -Encoding UTF8 -LiteralPath $PublicLog.FullName
+    if ($PublicLogText -match "Attempting online asset preparation") {
+        throw "Expected public manifest dry-run to stay offline"
+    }
+    if ($PublicLogText -notmatch "Verified: assets/wheels/lxml") {
+        throw "Expected public manifest dry-run to verify committed wheels"
+    }
+    if ($PublicLogText -notmatch "Hermit installer completed successfully") {
+        throw "Expected public manifest dry-run to complete install plan"
+    }
+
+    Set-Content -Encoding UTF8 -LiteralPath $TempChecksums -Value "# no active records"
+    @"
+{
+  "schemaVersion": 1,
+  "packageReady": false,
+  "status": "test-not-ready"
+}
+"@ | Set-Content -Encoding UTF8 -LiteralPath $TempNotReadyManifest
+
+    Write-Host "[TEST] Not-ready manifest should stop install with exit code 2 when online bootstrap is disabled"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempNotReadyManifest -ChecksumFile $TempChecksums -NoOnlineBootstrap
     if ($LASTEXITCODE -ne 2) {
-        throw "Expected bootstrap dry-run install to exit with code 2, got $LASTEXITCODE"
+        throw "Expected not-ready install to exit with code 2, got $LASTEXITCODE"
+    }
+
+    Write-Host "[TEST] Not-ready dry-run should describe online preparation and still stop with exit code 2"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempNotReadyManifest -ChecksumFile $TempChecksums -DryRun
+    if ($LASTEXITCODE -ne 2) {
+        throw "Expected not-ready dry-run install to exit with code 2, got $LASTEXITCODE"
     }
 
     $BootstrapDryRunLog = Get-ChildItem -LiteralPath (Join-Path $TempLocalAppData "Hermit\logs") -Filter "install-*.log" -File |
@@ -43,7 +76,6 @@ try {
     }
 
     Write-Host "[TEST] Ready manifest should complete dry-run install plan with exit code 0"
-    Set-Content -Encoding UTF8 -LiteralPath $TempChecksums -Value "# no active records"
     @"
 {
   "schemaVersion": 1,
