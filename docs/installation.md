@@ -115,15 +115,17 @@ Hermit 支持“预配置优先、缺失则提示”的配置流程：
 5. 安装脚本会优先导入 `assets/config/runtime.local.json`，其次导入 `assets/config/config.json`。
 6. 如果没有预配置文件，真实安装会提示用户输入配置。
 
-配置向导也可以单独运行：
+配置向导也可以单独运行；相对路径命令需要先进入 Hermit 项目根目录：
 
 ```powershell
+Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 ```
 
 使用指定预配置文件：
 
 ```powershell
+Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1 -ConfigFile assets\config\runtime.local.json
 ```
 

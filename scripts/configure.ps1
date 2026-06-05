@@ -203,22 +203,92 @@ function Write-RuntimeConfig {
     Write-Info "Runtime config written to user-local config directory."
 }
 
+function Test-LlmProviderConfig {
+    param([object]$ProviderConfig)
+
+    if ($null -eq $ProviderConfig) {
+        return $false
+    }
+
+    $ApiKeyProperty = $ProviderConfig.PSObject.Properties["apiKey"]
+    $BaseUrlProperty = $ProviderConfig.PSObject.Properties["baseUrl"]
+    return ($null -ne $ApiKeyProperty -or $null -ne $BaseUrlProperty)
+}
+
+function Get-InferredDefaultProviderName {
+    param([object]$Providers)
+
+    if ($null -eq $Providers) {
+        return $null
+    }
+
+    $ProviderProperties = @(
+        $Providers.PSObject.Properties |
+            Where-Object { $_.Name -ne "default" -and (Test-LlmProviderConfig -ProviderConfig $_.Value) }
+    )
+
+    if ($ProviderProperties.Count -eq 0) {
+        return $null
+    }
+
+    $PreferredNames = @("openai", "deepseek", "anthropic", "dashscope", "qwen")
+    foreach ($PreferredName in $PreferredNames) {
+        foreach ($ProviderProperty in $ProviderProperties) {
+            if ($ProviderProperty.Name.Equals($PreferredName, [System.StringComparison]::OrdinalIgnoreCase)) {
+                return $ProviderProperty.Name
+            }
+        }
+    }
+
+    return $ProviderProperties[0].Name
+}
+
+function ConvertTo-RuntimeConfigJson {
+    param([string]$RawConfig)
+
+    try {
+        $ParsedConfig = $RawConfig | ConvertFrom-Json
+    }
+    catch {
+        Fail "Runtime config JSON parse failed"
+    }
+
+    $ProvidersProperty = $ParsedConfig.PSObject.Properties["providers"]
+    if ($null -eq $ProvidersProperty -or $null -eq $ProvidersProperty.Value) {
+        Fail "Runtime config must contain providers object"
+    }
+
+    $DefaultProperty = $ProvidersProperty.Value.PSObject.Properties["default"]
+    $HasDefaultProvider = $null -ne $DefaultProperty -and -not [string]::IsNullOrWhiteSpace([string]$DefaultProperty.Value)
+    if (-not $HasDefaultProvider) {
+        $InferredProviderName = Get-InferredDefaultProviderName -Providers $ProvidersProperty.Value
+        if ([string]::IsNullOrWhiteSpace($InferredProviderName)) {
+            Write-Warn "Runtime config has no default API provider. API calls may fail until providers.default is configured."
+        }
+        elseif ($null -eq $DefaultProperty) {
+            Add-Member -InputObject $ProvidersProperty.Value -MemberType NoteProperty -Name "default" -Value $InferredProviderName
+            Write-Info "Runtime config default API provider inferred."
+        }
+        else {
+            $DefaultProperty.Value = $InferredProviderName
+            Write-Info "Runtime config default API provider inferred."
+        }
+    }
+
+    return ($ParsedConfig | ConvertTo-Json -Depth 12)
+}
+
 $SourcePath = Get-ConfigSourcePath
 if ($null -ne $SourcePath) {
     if (-not (Test-Path -LiteralPath $SourcePath)) {
         Fail "Runtime config file not found"
     }
 
-    try {
-        $RawConfig = Get-Content -Raw -Encoding UTF8 -LiteralPath $SourcePath
-        $null = $RawConfig | ConvertFrom-Json
-    }
-    catch {
-        Fail "Runtime config JSON parse failed"
-    }
+    $RawConfig = Get-Content -Raw -Encoding UTF8 -LiteralPath $SourcePath
+    $RuntimeConfigJson = ConvertTo-RuntimeConfigJson -RawConfig $RawConfig
 
     Write-Info "Runtime config source found. Installing without printing secret values."
-    Write-RuntimeConfig -JsonText $RawConfig
+    Write-RuntimeConfig -JsonText $RuntimeConfigJson
     exit 0
 }
 

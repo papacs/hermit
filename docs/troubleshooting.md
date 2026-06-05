@@ -177,9 +177,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Ins
 处理：
 
 - 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`，或使用兼容路径 `assets/config/config.json`，填入真实值后重新安装。
-- 或安装后运行：
+- 或安装后进入 Hermit 项目根目录运行：
 
 ```powershell
+Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 ```
 

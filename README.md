@@ -92,9 +92,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.p
 - 或使用兼容路径 `assets/config/config.json`；该文件也会被安装器自动导入。
 - 未提前配置时，真实安装过程会提示输入 API Key 和可选的微信/移动端远程控制参数。
 
-配置会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，该文件不应提交到仓库，日志也不会打印密钥值。也可安装后单独运行：
+配置会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，该文件不应提交到仓库，日志也不会打印密钥值。也可安装后在 Hermit 项目根目录单独运行：
 
 ```powershell
+Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 ```
 

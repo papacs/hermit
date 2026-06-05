@@ -3,9 +3,10 @@
   "environment": "local",
   "secretsPolicy": "Do not commit real API keys, tokens, cookies, or private workspace URLs.",
   "providers": {
+    "default": "deepseek",
     "deepseek": {
       "apiKey": "",
-      "baseUrl": ""
+      "baseUrl": "https://api.deepseek.com/v1"
     },
     "slack": {
       "botToken": "",
@@ -17,4 +18,3 @@
     "logDirectory": "%LOCALAPPDATA%\\Hermit\\logs"
   }
 }
-

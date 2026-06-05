@@ -5,6 +5,7 @@ $ConfigureScript = Join-Path $RepoRoot "scripts\configure.ps1"
 $TempDir = Join-Path $RepoRoot "tests\.tmp-configure"
 $TempLocalAppData = Join-Path $TempDir "localappdata"
 $TempSourceConfig = Join-Path $TempDir "runtime.local.json"
+$TempLegacyConfig = Join-Path $TempDir "legacy.config.json"
 $TempLogFile = Join-Path $TempDir "configure.log"
 $InstalledConfig = Join-Path $TempLocalAppData "Hermit\config\runtime.secrets.json"
 $RepoConfigJson = Join-Path $RepoRoot "assets\config\config.json"
@@ -59,6 +60,42 @@ try {
     }
     if ($LogText -notmatch "Runtime config written") {
         throw "Expected configure log to include success message"
+    }
+
+    Write-Host "[TEST] Legacy config without providers.default should be normalized"
+    Remove-Item -LiteralPath $InstalledConfig -Force
+    Remove-Item -LiteralPath $TempLogFile -Force
+    @"
+{
+  "schemaVersion": 1,
+  "environment": "local",
+  "providers": {
+    "deepseek": {
+      "apiKey": "sk-deepseek-secret",
+      "baseUrl": "https://api.deepseek.com/v1"
+    },
+    "slack": {
+      "botToken": "",
+      "signingSecret": ""
+    }
+  }
+}
+"@ | Set-Content -Encoding UTF8 -LiteralPath $TempLegacyConfig
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -ConfigFile $TempLegacyConfig -NoPrompt -LogFile $TempLogFile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Expected legacy config to exit 0, got $LASTEXITCODE"
+    }
+
+    $NormalizedConfig = Get-Content -Raw -Encoding UTF8 -LiteralPath $InstalledConfig | ConvertFrom-Json
+    if ($NormalizedConfig.providers.default -ne "deepseek") {
+        throw "Expected legacy config normalization to set providers.default to deepseek"
+    }
+    if ($NormalizedConfig.providers.deepseek.baseUrl -ne "https://api.deepseek.com/v1") {
+        throw "Expected legacy config normalization to preserve provider baseUrl"
+    }
+    if ($NormalizedConfig.providers.slack.botToken -ne "") {
+        throw "Expected legacy config normalization to preserve non-LLM provider settings"
     }
 
     Write-Host "[TEST] Missing runtime secrets with NoPrompt should exit 2"
