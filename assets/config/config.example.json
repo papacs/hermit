@@ -6,7 +6,7 @@
     "default": "deepseek",
     "deepseek": {
       "apiKey": "",
-      "baseUrl": "https://api.deepseek.com/v1"
+      "baseUrl": "https://api.deepseek.com"
     },
     "slack": {
       "botToken": "",

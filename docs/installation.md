@@ -129,6 +129,13 @@ Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1 -ConfigFile assets\config\runtime.local.json
 ```
 
+验证 API 配置：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
+```
+
 安装脚本相关参数：
 
 - `-RuntimeConfigFile <path>`：指定预配置文件。

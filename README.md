@@ -99,6 +99,13 @@ Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 ```
 
+验证外部 API 配置和网络请求：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
+```
+
 安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
 
 ```powershell

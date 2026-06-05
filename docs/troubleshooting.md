@@ -186,6 +186,26 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
 
 配置文件会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`。日志不应包含 API Key、Token 或 Webhook secret。
 
+### TCP 可连但 API 请求失败
+
+现象：
+
+- `Test-NetConnection api.deepseek.com -Port 443` 显示 `TcpTestSucceeded: True`。
+- `Invoke-RestMethod` 仍报 `无法连接到远程服务器`。
+
+处理：
+
+- 不要继续手动拼长命令，进入 Hermit 项目根目录运行：
+
+```powershell
+Set-Location <Hermit项目目录>
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
+```
+
+- 该脚本会读取 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，不打印 API Key，并输出 DNS、TCP、代理、HTTP 状态、响应体和内层异常。
+- 如果没有 HTTP 状态码，通常是 TLS、证书、代理、防火墙流量检查或 Windows PowerShell/.NET HTTP 栈问题。
+- 如果返回 HTTP 400，优先检查 `model`、`baseUrl` 和请求体；如果返回 HTTP 401，优先检查 API Key 是否无效或已撤销。
+
 ### Hermes 配置被覆盖
 
 现象：
