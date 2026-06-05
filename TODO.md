@@ -58,7 +58,7 @@
   - [x] 添加 GitHub Actions Windows CI。
   - [x] 添加 `docs/open-source-release.md`。
   - [x] 初始化 git 仓库并创建首个提交。
-  - [ ] 推送到 GitHub 仓库 `git@github.com:papacs/hermit.git` 并确认默认分支。
+  - [x] 推送到 GitHub 仓库 `git@github.com:papacs/hermit.git` 并确认默认分支。
 
 - [ ] Phase 5：验收与打包
   - [ ] 验证 Windows 10。
