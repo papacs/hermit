@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "packageReady": false,
+  "status": "bootstrap",
+  "requiredInstallers": [
+    {
+      "id": "python",
+      "name": "Python",
+      "version": "3.11.9",
+      "path": "assets/installers/python-3.11.9-amd64.exe",
+      "architecture": "x64",
+      "required": true
+    },
+    {
+      "id": "hermes",
+      "name": "Hermes Desktop",
+      "version": "pinned-by-packager",
+      "path": "assets/installers/hermes-desktop-setup.exe",
+      "architecture": "x64",
+      "required": true
+    }
+  ],
+  "pythonPackages": [
+    {
+      "name": "python-docx",
+      "required": true,
+      "wheelDirectory": "assets/wheels"
+    }
+  ],
+  "configPackages": [
+    {
+      "id": "hermes-config-template",
+      "path": "assets/config/config_template.zip",
+      "required": true,
+      "containsSecrets": false
+    }
+  ],
+  "notes": [
+    "packageReady must remain false until installers, wheels, config template, and checksums are present.",
+    "Real secrets must not be committed to this project."
+  ]
+}
+

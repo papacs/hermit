@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "environment": "local",
+  "secretsPolicy": "Do not commit real API keys, tokens, cookies, or private workspace URLs.",
+  "providers": {
+    "deepseek": {
+      "apiKey": "",
+      "baseUrl": ""
+    },
+    "slack": {
+      "botToken": "",
+      "signingSecret": ""
+    }
+  },
+  "hermit": {
+    "skillsDirectory": "%USERPROFILE%\\Hermit_Skills",
+    "logDirectory": "%LOCALAPPDATA%\\Hermit\\logs"
+  }
+}
+

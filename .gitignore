@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+*.dist-info/
+.venv/
+venv/
+
+# Test/runtime artifacts
+tests/.tmp/
+diagnostics/
+*.log
+
+# Hermit local/private assets
+assets/installers/*
+assets/wheels/*
+assets/config/config_template.zip
+assets/manifest.local.json
+assets/checksums.local.sha256
+!assets/installers/.gitkeep
+!assets/wheels/.gitkeep
+
+# Secrets and local config
+*.secret.*
+*.local.*
+.env
+.env.*
+
+# Packaged outputs
+dist/
+build/
+*.zip
+*.7z
+
+# OS/editor
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

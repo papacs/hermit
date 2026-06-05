@@ -1,0 +1,9 @@
+﻿# Format:
+# <sha256>  <relative-path>
+#
+# Example after assets are downloaded:
+# 64 lowercase hex characters  assets/installers/python-3.11.9-amd64.exe
+
+
+
+
