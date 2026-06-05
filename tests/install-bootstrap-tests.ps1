@@ -16,7 +16,7 @@ if ($LASTEXITCODE -ne 2) {
     throw "Expected bootstrap install to exit with code 2, got $LASTEXITCODE"
 }
 
-Write-Host "[TEST] Ready manifest should reach not-implemented install phases with exit code 3"
+Write-Host "[TEST] Ready manifest should complete dry-run install plan with exit code 0"
 New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
 Set-Content -Encoding UTF8 -LiteralPath $TempChecksums -Value "# no active records"
 @"
@@ -28,9 +28,9 @@ Set-Content -Encoding UTF8 -LiteralPath $TempChecksums -Value "# no active recor
 "@ | Set-Content -Encoding UTF8 -LiteralPath $TempManifest
 
 try {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums
-    if ($LASTEXITCODE -ne 3) {
-        throw "Expected ready manifest to exit with code 3, got $LASTEXITCODE"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums -DryRun
+    if ($LASTEXITCODE -ne 0) {
+        throw "Expected ready manifest dry-run to exit with code 0, got $LASTEXITCODE"
     }
 }
 finally {

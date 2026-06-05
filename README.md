@@ -47,7 +47,7 @@ Hermit_Project/
 | 开源项目元数据 | 已创建 | MIT License、Security、Contributing、CI |
 | 资源校验脚本 | 已创建 | 见 `scripts/verify-assets.ps1` |
 | 安装入口骨架 | 已创建 | 见 `一键唤醒隐士.bat` 和 `scripts/install.ps1` |
-| 完整安装流程 | 待实现 | Python、Hermes、配置注入和 Skill 部署仍待开发 |
+| 完整安装流程 | 已实现 dry-run | 真实安装尚需在干净 Windows 环境验收 |
 | 本地离线资源 | 本机已准备 | Python、Hermes、wheels、config zip 已下载/生成；本地清单不提交 |
 
 ## 快速开始
@@ -66,14 +66,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-在离线资源未准备完成前，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。
+在离线资源未准备完成前，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
+```
 
 本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地离线资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
 
 ## 安全原则
 
 - 不把 API Key、Token、Cookie 或真实用户配置提交到仓库。
-- 不默认覆盖 `%APPDATA%\Hermes`，覆盖前必须备份。
+- 不默认覆盖 Hermes 配置；当前目标为 `%LOCALAPPDATA%\hermes`，覆盖前必须备份，并兼容备份旧 `%APPDATA%\Hermes`。
 - 不在日志中打印敏感配置值。
 - 不覆盖用户原始 `.docx` 文件。
 - AI Word Skill 只能访问 `C:\HermitWorkspace` 沙箱内的 `.docx` 文件。

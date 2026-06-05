@@ -18,6 +18,24 @@ install-YYYYMMDD-HHMMSS.log
 
 ## 常见问题
 
+### 安装脚本退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功，或 dry-run 安装计划验证通过 |
+| `1` | 校验、环境、安装器、配置或自检失败 |
+| `2` | 公开 bootstrap 清单未就绪，脚本未执行安装动作 |
+
+### 先验证安装计划
+
+真实安装前先运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
+```
+
+该模式不会执行安装器、不会写入配置、不会复制 Skill，也不会创建 `C:\HermitWorkspace`。
+
 ### 资源文件缺失
 
 现象：
@@ -92,4 +110,3 @@ install-YYYYMMDD-HHMMSS.log
 - 日志不得打印 API Key、Token、Cookie。
 - 配置备份目录只应授予当前用户读写权限。
 - 真实配置不应提交到仓库。
-

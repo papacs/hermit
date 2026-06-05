@@ -108,3 +108,21 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-assets.ps
 
 - Python 3.11.9 Windows x64：`https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 - Hermes Desktop Windows：`https://hermes-assets.nousresearch.com/Hermes-Setup.exe`
+
+## Dry-run 验证
+
+完整安装脚本支持 dry-run。该模式会执行资源校验、环境检查和安装计划生成，但不会运行安装器、不会写入 Hermes 配置、不会复制 Skill，也不会创建沙箱目录。
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
+```
+
+退出码：
+
+- `0`：安装计划验证通过。
+- `1`：校验或环境错误。
+- `2`：公开 bootstrap 清单未就绪。
+
+## Hermes 配置路径
+
+Hermes Desktop 官方文档说明 Windows 运行时数据位于 `%LOCALAPPDATA%\hermes`。Hermit 以该目录为配置注入目标，并在写入前备份到 `%LOCALAPPDATA%\Hermit\backup\`。如果检测到旧 `%APPDATA%\Hermes` 目录，也会做兼容备份，但不会把它作为主要写入目标。

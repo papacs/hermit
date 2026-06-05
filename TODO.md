@@ -28,8 +28,9 @@
   - [x] 创建 `一键唤醒隐士.bat`，负责 UAC 提权和调用 PowerShell。
   - [x] 创建 `scripts/install.ps1` bootstrap 骨架，负责日志初始化、资源校验和资源未就绪中止。
   - [x] 支持本地 `manifest.local.json` / `checksums.local.sha256` 优先。
-  - [ ] 扩展 `scripts/install.ps1`，负责完整安装流程。
-  - [ ] 实现幂等检测、配置备份、失败退出码和安装日志。
+  - [x] 扩展 `scripts/install.ps1`，负责完整安装流程。
+  - [x] 实现 Python 检测、配置备份、失败退出码、安装日志和 dry-run。
+  - [ ] 在真实 Windows 环境验证 Hermes `/S` 静默安装参数和重复安装行为。
   - [ ] 在无网络环境中完成一次端到端验证。
 
 - [x] Phase 4：Word Skill
@@ -68,7 +69,7 @@
 ## 风险清单
 
 - Hermes 静默安装参数需要以实际安装包为准验证。
-- `%APPDATA%\Hermes` 的真实配置结构需要在目标版本上确认。
+- `%LOCALAPPDATA%\hermes` 的真实配置结构需要在目标版本上确认；旧 `%APPDATA%\Hermes` 仅作为兼容备份路径。
 - `python-docx` 无法完整覆盖复杂 Word 格式，复杂内容需要拒绝修改或返回 warning。
 - 固定沙箱 `C:\HermitWorkspace` 在部分机器上可能需要管理员权限；安装脚本应提前创建并设置当前用户 ACL。
 - 当前尚未设置远程仓库，无法推送或打开 PR。

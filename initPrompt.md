@@ -118,7 +118,7 @@ py -3.11 -m pip download `
    - 检测 Python 版本；优先复用满足条件的 Python，否则安装或准备本地 runtime。
    - 使用 `--no-index --find-links assets/wheels` 离线安装依赖。
    - 静默安装 Hermes，并校验安装结果。
-   - 备份现有 `%APPDATA%\Hermes` 配置到 `%LOCALAPPDATA%\Hermit\backup\Hermes-YYYYMMDD-HHMMSS`。
+   - 备份现有 `%LOCALAPPDATA%\hermes` 配置到 `%LOCALAPPDATA%\Hermit\backup\hermes-YYYYMMDD-HHMMSS`，并兼容备份旧 `%APPDATA%\Hermes`。
    - 注入配置模板；能合并则合并，不能合并时必须先备份再覆盖。
    - 复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
    - 运行安装后自检，包括 Python import、Hermes 路径、技能脚本可执行性。
@@ -339,7 +339,7 @@ Hermit_Project/
 - 如无可用 Python，使用 `assets/installers/python-3.11.9-amd64.exe` 静默安装，参数必须清晰可维护。
 - 使用本地 `assets/wheels/` 离线安装 `python-docx` 及其依赖：`python -m pip install --no-index --find-links assets/wheels python-docx`。
 - 静默安装 `assets/installers/hermes-desktop-setup.exe`。
-- 备份 `%APPDATA%\Hermes` 到 `%LOCALAPPDATA%\Hermit\backup\`。
+- 备份 `%LOCALAPPDATA%\hermes` 到 `%LOCALAPPDATA%\Hermit\backup\`，并兼容备份旧 `%APPDATA%\Hermes`。
 - 解压并注入 `assets/config/config_template.zip`。
 - 复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
 - 执行安装后自检。
