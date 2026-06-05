@@ -28,6 +28,7 @@ assets/checksums.local.sha256
 
 # Secrets and local config
 *.secret.*
+*.secrets.*
 *.local.*
 .env
 .env.*

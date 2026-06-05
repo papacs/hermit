@@ -14,7 +14,8 @@
 8. 脚本静默安装 Hermes 桌面端。
 9. 脚本备份现有 Hermes 配置，并注入 `assets/config/config_template.zip`。
 10. 脚本复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
-11. 脚本运行自检并输出结果。
+11. 脚本导入或提示填写运行期密钥配置。
+12. 脚本运行自检并输出结果。
 
 ## 本地安装资源目录
 
@@ -26,7 +27,8 @@ assets/
 ├── wheels/
 ├── config/
 │   ├── config_template.zip
-│   └── config.example.json
+│   ├── config.example.json
+│   └── runtime.example.json
 ├── manifest.json
 └── checksums.sha256
 ```
@@ -77,6 +79,43 @@ assets/config/config_template.zip
 ```
 
 配置模板默认不应包含真实 API Key 或 Token。确需分发私有配置时，应使用受控分发包，并保证日志不输出敏感值。
+
+## 运行期密钥配置
+
+Hermit 支持“预配置优先、缺失则提示”的配置流程：
+
+1. 可提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`。
+2. 在 `runtime.local.json` 中填入外部 API Key、Base URL、微信/移动端远程控制参数。
+3. `runtime.local.json` 会被 `.gitignore` 排除，不应提交到公开仓库。
+4. 安装脚本会优先导入 `assets/config/runtime.local.json`。
+5. 如果没有预配置文件，真实安装会提示用户输入配置。
+
+配置向导也可以单独运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
+```
+
+使用指定预配置文件：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1 -ConfigFile assets\config\runtime.local.json
+```
+
+安装脚本相关参数：
+
+- `-RuntimeConfigFile <path>`：指定预配置文件。
+- `-SkipRuntimeConfig`：本次安装跳过运行期密钥配置。
+- `-NoConfigPrompt`：没有预配置时不交互提示，返回 warning 后继续安装。
+- `-RequireRuntimeConfig`：配置失败或跳过时让安装失败。
+
+配置最终写入：
+
+```text
+%LOCALAPPDATA%\Hermit\config\runtime.secrets.json
+```
+
+日志只记录配置状态，不打印 API Key、Token、Webhook secret 或完整配置内容。
 
 ## 校验文件
 

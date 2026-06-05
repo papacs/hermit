@@ -104,6 +104,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - 安装脚本会使用项目内 Python 3.11.9 安装包。
 - 如果选择系统级安装，脚本必须避免重复追加 PATH。
 
+### 运行期配置未完成
+
+现象：
+
+- 日志中出现 `Runtime config not configured`。
+- 安装仍然完成，但后续外部 API 或移动端远程控制不可用。
+
+处理：
+
+- 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`，填入真实值后重新安装。
+- 或安装后运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
+```
+
+配置文件会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`。日志不应包含 API Key、Token 或 Webhook secret。
+
 ### Hermes 配置被覆盖
 
 现象：

@@ -11,6 +11,7 @@
   - [x] 创建资源清单和配置示例骨架。
   - [x] 创建 PowerShell 资源校验脚本 `scripts/verify-assets.ps1`。
   - [x] 创建安全安装入口骨架 `scripts/install.ps1`。
+  - [x] 创建运行期密钥配置向导 `scripts/configure.ps1`。
   - [x] 创建日志采集脚本 `scripts/collect-logs.ps1`。
 
 ## 下一步
@@ -32,6 +33,7 @@
   - [x] 实现 Python 检测、配置备份、失败退出码、安装日志和 dry-run。
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
+  - [x] 支持运行期配置预置文件导入、安装过程交互配置和配置缺失跳过。
   - [ ] 在真实 Windows 环境验证 Hermes `/S` 静默安装参数和重复安装行为。
   - [ ] 在联网真实使用环境中完成一次端到端验证，包括外部 API、Hermes 和移动端远程控制链路。
 

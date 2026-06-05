@@ -46,6 +46,7 @@ Hermit_Project/
 | Word Skill 测试 | 已创建 | 见 `tests/test_docx_processor.py` |
 | 开源项目元数据 | 已创建 | MIT License、Security、Contributing、CI |
 | 资源校验脚本 | 已创建 | 见 `scripts/verify-assets.ps1` |
+| 配置向导 | 已创建 | 见 `scripts/configure.ps1` |
 | 安装入口 | 已创建 | 见 `一键唤醒隐士.bat` 和 `scripts/install.ps1` |
 | 完整安装流程 | 已实现 dry-run | 真实安装尚需在干净 Windows 环境验收 |
 | 本地安装资源 | 本机已准备 | Python、Hermes、wheels、config zip 已下载/生成；本地清单不提交 |
@@ -73,6 +74,17 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 ```
 
 本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地安装资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
+
+运行期密钥和远程控制配置支持两种方式：
+
+- 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json` 并填入真实值；安装器会优先导入该本地文件。
+- 未提前配置时，真实安装过程会提示输入 API Key 和可选的微信/移动端远程控制参数。
+
+配置会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，该文件不应提交到仓库，日志也不会打印密钥值。也可安装后单独运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1
+```
 
 安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
 

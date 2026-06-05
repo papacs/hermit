@@ -1,4 +1,4 @@
-# Offline Assets
+# Local Assets
 
 This directory separates open-source metadata from local redistributable assets.
 
@@ -6,7 +6,8 @@ This directory separates open-source metadata from local redistributable assets.
 
 - `manifest.json`: public bootstrap manifest. It remains `packageReady=false` so a fresh clone does not pretend to contain private binaries.
 - `checksums.sha256`: public bootstrap checksum file. It contains no active binary records by default.
-- `config/config.example.json`: safe example config without secrets.
+- `config/config.example.json`: safe Hermes config example without secrets.
+- `config/runtime.example.json`: safe runtime secret config example with empty secret values.
 
 ## Local-Only Files
 
@@ -18,6 +19,7 @@ The following files are ignored by git and may exist on a packager machine:
 - `installers/hermes-desktop-setup.exe`
 - `wheels/*.whl`
 - `config/config_template.zip`
+- `config/runtime.local.json`
 
 `scripts/install.ps1` prefers local manifest/checksum files when they exist. Public repositories should not commit local binaries, private config templates, or generated local manifests.
-
+`scripts/configure.ps1` prefers `assets/config/runtime.local.json` when it exists, then falls back to interactive prompts.

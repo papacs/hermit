@@ -1,7 +1,11 @@
 param(
     [string]$ManifestFile,
     [string]$ChecksumFile,
+    [string]$RuntimeConfigFile,
     [switch]$DryRun,
+    [switch]$SkipRuntimeConfig,
+    [switch]$NoConfigPrompt,
+    [switch]$RequireRuntimeConfig,
     [string[]]$HermesSilentArgs = @("/S")
 )
 
@@ -201,7 +205,7 @@ function Install-PythonPackages {
 
     $ExitCode = Invoke-Python -Python $Python -Arguments $PipArgs
     if ($ExitCode -ne 0) {
-        Stop-Install -Message "Offline pip install failed with exit code $ExitCode" -ExitCode 1
+        Stop-Install -Message "Local pip install failed with exit code $ExitCode" -ExitCode 1
     }
 }
 
@@ -327,6 +331,53 @@ function Initialize-HermitWorkspace {
     }
 }
 
+function Configure-RuntimeSecrets {
+    if ($SkipRuntimeConfig) {
+        Write-Log "Runtime config setup skipped by request."
+        return
+    }
+
+    $ConfigureScript = Join-Path $RepoRoot "scripts\configure.ps1"
+    if (-not (Test-Path -LiteralPath $ConfigureScript)) {
+        Stop-Install -Message "Runtime config script not found: scripts/configure.ps1" -ExitCode 1
+    }
+
+    $ConfigureArgs = @(
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        $ConfigureScript,
+        "-LogFile",
+        $LogFile
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($RuntimeConfigFile)) {
+        $ConfigureArgs += @("-ConfigFile", $RuntimeConfigFile)
+    }
+    if ($DryRun) {
+        $ConfigureArgs += "-DryRun"
+    }
+    if ($NoConfigPrompt) {
+        $ConfigureArgs += "-NoPrompt"
+    }
+
+    Write-Log "Running runtime config setup"
+    & powershell.exe @ConfigureArgs
+    $ExitCode = $LASTEXITCODE
+    if ($ExitCode -eq 0) {
+        Write-Log "Runtime config setup completed."
+        return
+    }
+
+    if ($ExitCode -eq 2 -and -not $RequireRuntimeConfig) {
+        Write-Log -Level "WARN" -Message "Runtime config was not completed. You can rerun scripts\configure.ps1 later."
+        return
+    }
+
+    Stop-Install -Message "Runtime config setup failed with exit code $ExitCode" -ExitCode 1
+}
+
 function Test-InstallHealth {
     param([object]$Python)
 
@@ -386,7 +437,7 @@ try {
         Stop-Install -Message "Asset verification script not found: $VerifyScript" -ExitCode 1
     }
 
-    Write-Log "Running offline asset verification"
+    Write-Log "Running local asset verification"
     Write-Log "Manifest file: $ManifestFile"
     Write-Log "Checksum file: $ChecksumFile"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $ChecksumFile -LogFile $LogFile
@@ -402,7 +453,7 @@ try {
     }
 
     if ($Manifest.packageReady -ne $true) {
-        Write-Log -Level "WARN" -Message "Offline package is not ready. Set packageReady=true only after installers, wheels, config, and checksums are complete."
+        Write-Log -Level "WARN" -Message "Local package is not ready. Set packageReady=true only after installers, wheels, config, and checksums are complete."
         Write-Log -Level "WARN" -Message "No installation actions were performed."
         exit 2
     }
@@ -428,6 +479,7 @@ try {
     Install-HermesConfig -Manifest $Manifest
     Install-HermitSkills
     Initialize-HermitWorkspace
+    Configure-RuntimeSecrets
     Test-InstallHealth -Python $Python
 
     Write-Log "Hermit installer completed successfully"

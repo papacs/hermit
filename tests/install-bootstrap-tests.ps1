@@ -52,6 +52,12 @@ try {
     if ($LogText -notmatch "Hermit installer completed successfully") {
         throw "Expected install log to include completion output"
     }
+    if ($LogText -notmatch "Running runtime config setup") {
+        throw "Expected install log to include runtime config setup"
+    }
+    if ($LogText -notmatch "Dry-run: would prompt for runtime config") {
+        throw "Expected install dry-run to avoid interactive runtime config prompt"
+    }
 }
 finally {
     $env:LOCALAPPDATA = $OriginalLocalAppData

@@ -79,7 +79,7 @@ if (-not (Test-Path -LiteralPath $ChecksumFile)) {
     Fail "Checksum file not found: $ChecksumFile"
 }
 
-Write-Info "Verifying offline assets: $ChecksumFile"
+Write-Info "Verifying local assets: $ChecksumFile"
 
 $Lines = Get-Content -Encoding UTF8 -LiteralPath $ChecksumFile
 $RecordCount = 0
@@ -119,7 +119,7 @@ if ($RecordCount -eq 0) {
     Write-Info "No active checksum records found. Bootstrap stage passes."
 }
 else {
-    Write-Info "Offline asset verification completed. Verified ${RecordCount} file(s)."
+    Write-Info "Local asset verification completed. Verified ${RecordCount} file(s)."
 }
 
 exit 0

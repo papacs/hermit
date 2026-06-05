@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "providers": {
+    "default": "openai",
+    "openai": {
+      "apiKey": "",
+      "baseUrl": "https://api.openai.com/v1"
+    }
+  },
+  "remoteControl": {
+    "wechat": {
+      "enabled": false,
+      "token": "",
+      "webhookUrl": ""
+    }
+  }
+}
