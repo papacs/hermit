@@ -7,6 +7,8 @@ $TempLocalAppData = Join-Path $TempDir "localappdata"
 $TempSourceConfig = Join-Path $TempDir "runtime.local.json"
 $TempLogFile = Join-Path $TempDir "configure.log"
 $InstalledConfig = Join-Path $TempLocalAppData "Hermit\config\runtime.secrets.json"
+$RepoConfigJson = Join-Path $RepoRoot "assets\config\config.json"
+$CreatedRepoConfigJson = $false
 
 if (-not (Test-Path -LiteralPath $ConfigureScript)) {
     throw "scripts/configure.ps1 is missing"
@@ -62,7 +64,7 @@ try {
     Write-Host "[TEST] Missing runtime secrets with NoPrompt should exit 2"
     Remove-Item -LiteralPath $InstalledConfig -Force
     Remove-Item -LiteralPath $TempLogFile -Force
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -NoPrompt -LogFile $TempLogFile
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -NoPrompt -NoDefaultConfig -LogFile $TempLogFile
     if ($LASTEXITCODE -ne 2) {
         throw "Expected missing NoPrompt config to exit 2, got $LASTEXITCODE"
     }
@@ -76,16 +78,36 @@ try {
     }
 
     Write-Host "[TEST] Dry-run should not write runtime secrets"
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -ConfigFile $TempSourceConfig -DryRun -NoPrompt -LogFile $TempLogFile
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -ConfigFile $TempSourceConfig -DryRun -NoPrompt -NoDefaultConfig -LogFile $TempLogFile
     if ($LASTEXITCODE -ne 0) {
         throw "Expected dry-run config to exit 0, got $LASTEXITCODE"
     }
     if (Test-Path -LiteralPath $InstalledConfig) {
         throw "Expected dry-run config to avoid writing runtime secrets"
     }
+
+    if (-not (Test-Path -LiteralPath $RepoConfigJson)) {
+        Write-Host "[TEST] assets/config/config.json should be discovered as a preconfigured runtime config"
+        Copy-Item -LiteralPath $TempSourceConfig -Destination $RepoConfigJson
+        $CreatedRepoConfigJson = $true
+        Remove-Item -LiteralPath $TempLogFile -Force
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ConfigureScript -NoPrompt -LogFile $TempLogFile
+        if ($LASTEXITCODE -ne 0) {
+            throw "Expected default assets/config/config.json to exit 0, got $LASTEXITCODE"
+        }
+        if (-not (Test-Path -LiteralPath $InstalledConfig)) {
+            throw "Expected config.json discovery to write runtime secrets"
+        }
+    }
+    else {
+        Write-Host "[TEST] Skipping config.json discovery test because a local config.json already exists"
+    }
 }
 finally {
     $env:LOCALAPPDATA = $OriginalLocalAppData
+    if ($CreatedRepoConfigJson -and (Test-Path -LiteralPath $RepoConfigJson)) {
+        Remove-Item -LiteralPath $RepoConfigJson -Force
+    }
     if (Test-Path -LiteralPath $TempDir) {
         $ResolvedTempDir = (Resolve-Path -LiteralPath $TempDir).Path
         if (-not $ResolvedTempDir.StartsWith($RepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {

@@ -31,9 +31,10 @@
   - [x] 支持本地 `manifest.local.json` / `checksums.local.sha256` 优先。
   - [x] 扩展 `scripts/install.ps1`，负责完整安装流程。
   - [x] 实现 Python 检测、配置备份、失败退出码、安装日志和 dry-run。
+  - [x] 使用 `%LOCALAPPDATA%\Hermit\runtime\venv` 隔离 Python 依赖，避免污染系统 Python。
   - [x] 将资源校验输出并入主安装日志。
   - [x] 为安装脚本增加未捕获异常日志兜底。
-  - [x] 支持运行期配置预置文件导入、安装过程交互配置和配置缺失跳过。
+  - [x] 支持运行期配置预置文件导入、`assets/config/config.json` 兼容、安装过程交互配置和配置缺失跳过。
   - [ ] 在真实 Windows 环境验证 Hermes `/S` 静默安装参数和重复安装行为。
   - [ ] 在联网真实使用环境中完成一次端到端验证，包括外部 API、Hermes 和移动端远程控制链路。
 

@@ -8,6 +8,7 @@ Hermit 是一个面向 Windows 10/11 普通用户的本地化 AI 办公自动化
 
 - 一键安装：用户双击入口文件即可启动安装流程。
 - 本地资源优先：安装过程从 `assets/` 读取本地安装包和 wheel 包，减少下载失败、网络波动和重复等待。
+- Python 隔离：依赖安装到 `%LOCALAPPDATA%\Hermit\runtime\venv`，不写入系统 Python 或用户全局 `site-packages`。
 - 幂等执行：重复运行不会破坏已安装环境或重复污染 PATH。
 - 配置安全：覆盖 Hermes 配置前必须备份，日志不得输出敏感值。
 - 文档安全：`.docx` 修改必须另存为修订版，绝不覆盖原文件。
@@ -67,7 +68,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-在本地安装资源未准备完成前，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
+从 GitHub 直接克隆的公开仓库不包含安装器、wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会返回退出码 `2`，表示安装包尚未就绪，且不会执行任何安装动作。使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -DryRun
@@ -75,9 +76,10 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地安装资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
 
-运行期密钥和远程控制配置支持两种方式：
+运行期密钥和远程控制配置支持三种方式：
 
 - 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json` 并填入真实值；安装器会优先导入该本地文件。
+- 或使用兼容路径 `assets/config/config.json`；该文件也会被安装器自动导入。
 - 未提前配置时，真实安装过程会提示输入 API Key 和可选的微信/移动端远程控制参数。
 
 配置会写入 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，该文件不应提交到仓库，日志也不会打印密钥值。也可安装后单独运行：

@@ -34,6 +34,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
 | `1` | 校验、环境、安装器、配置或自检失败 |
 | `2` | 公开 bootstrap 清单未就绪，脚本未执行安装动作 |
 
+如果从 GitHub 直接克隆仓库后运行安装，常见结果是退出码 `2`。公开仓库默认不包含安装器、wheel、本地清单和私有配置，需要使用带 `assets/manifest.local.json`、`assets/checksums.local.sha256`、安装器和 wheel 的本地安装包。
+
 ### 先验证安装计划
 
 真实安装前先运行：
@@ -104,6 +106,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - 安装脚本会使用项目内 Python 3.11.9 安装包。
 - 如果选择系统级安装，脚本必须避免重复追加 PATH。
 
+### Python 依赖安装失败
+
+现象：
+
+- 日志中出现 `Local pip install failed`。
+- 或 pip 输出显示已安装到用户全局 `site-packages`。
+
+处理：
+
+- 新版本安装脚本会使用 `%LOCALAPPDATA%\Hermit\runtime\venv`，不会再向系统 Python 或用户全局 `site-packages` 写包。
+- 先运行 dry-run 确认日志中出现 `Python virtual environment` 和 `Would install Python packages into virtual environment`。
+- 确认 `assets/wheels/` 中存在 `python-docx`、`lxml` 和 `typing_extensions` 对应 wheel。
+
 ### 运行期配置未完成
 
 现象：
@@ -113,7 +128,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 处理：
 
-- 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`，填入真实值后重新安装。
+- 提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`，或使用兼容路径 `assets/config/config.json`，填入真实值后重新安装。
 - 或安装后运行：
 
 ```powershell

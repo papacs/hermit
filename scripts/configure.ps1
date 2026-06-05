@@ -1,6 +1,7 @@
 param(
     [string]$ConfigFile,
     [switch]$NoPrompt,
+    [switch]$NoDefaultConfig,
     [switch]$DryRun,
     [string]$LogFile
 )
@@ -13,6 +14,7 @@ $LocalAppData = if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) { $env:TEMP
 $RuntimeConfigDir = Join-Path $LocalAppData "Hermit\config"
 $RuntimeConfigFile = Join-Path $RuntimeConfigDir "runtime.secrets.json"
 $DefaultLocalConfigFile = Join-Path $RepoRoot "assets\config\runtime.local.json"
+$LegacyLocalConfigFile = Join-Path $RepoRoot "assets\config\config.json"
 
 function Write-Line {
     param(
@@ -101,8 +103,16 @@ function Get-ConfigSourcePath {
         return Resolve-RepoPath -Path $ConfigFile
     }
 
+    if ($NoDefaultConfig) {
+        return $null
+    }
+
     if (Test-Path -LiteralPath $DefaultLocalConfigFile) {
         return $DefaultLocalConfigFile
+    }
+
+    if (Test-Path -LiteralPath $LegacyLocalConfigFile) {
+        return $LegacyLocalConfigFile
     }
 
     return $null

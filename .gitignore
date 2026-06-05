@@ -21,6 +21,8 @@ diagnostics/
 assets/installers/*
 assets/wheels/*
 assets/config/config_template.zip
+assets/config/config.json
+assets/config/runtime.local.json
 assets/manifest.local.json
 assets/checksums.local.sha256
 !assets/installers/.gitkeep

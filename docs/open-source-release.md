@@ -5,11 +5,11 @@ Hermit is intended to be published as an open-source local automation tool. Befo
 ## Repository Hygiene
 
 - Initialize git only after confirming the final repository name and remote.
-- Keep `assets/installers/`, `assets/wheels/`, `assets/config/config_template.zip`, `assets/config/runtime.local.json`, logs, diagnostics, and local secrets out of git.
+- Keep `assets/installers/`, `assets/wheels/`, `assets/config/config_template.zip`, `assets/config/runtime.local.json`, `assets/config/config.json`, logs, diagnostics, and local secrets out of git.
 - Confirm `.gitignore` excludes private binaries and generated packages.
 - Confirm `LICENSE`, `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `README.md` are present.
 - Confirm no real API keys, Slack tokens, cookies, private URLs, or user documents are committed.
-- Confirm `assets/manifest.local.json`, `assets/checksums.local.sha256`, installers, wheels, `config_template.zip`, and `runtime.local.json` are not committed.
+- Confirm `assets/manifest.local.json`, `assets/checksums.local.sha256`, installers, wheels, `config_template.zip`, `runtime.local.json`, and `config.json` are not committed.
 
 ## Legal And Redistribution
 

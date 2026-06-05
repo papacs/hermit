@@ -5,6 +5,7 @@ param(
     [switch]$DryRun,
     [switch]$SkipRuntimeConfig,
     [switch]$NoConfigPrompt,
+    [switch]$NoDefaultRuntimeConfig,
     [switch]$RequireRuntimeConfig,
     [string[]]$HermesSilentArgs = @("/S")
 )
@@ -18,6 +19,11 @@ $AppData = if ([string]::IsNullOrWhiteSpace($env:APPDATA)) { Join-Path $LocalApp
 $UserProfile = if ([string]::IsNullOrWhiteSpace($env:USERPROFILE)) { [Environment]::GetFolderPath("UserProfile") } else { $env:USERPROFILE }
 $LogDir = Join-Path $LocalAppData "Hermit\logs"
 $BackupRoot = Join-Path $LocalAppData "Hermit\backup"
+$RuntimeRoot = Join-Path $LocalAppData "Hermit\runtime"
+$ManagedPythonDir = Join-Path $RuntimeRoot "Python311"
+$ManagedPythonExe = Join-Path $ManagedPythonDir "python.exe"
+$VenvDir = Join-Path $RuntimeRoot "venv"
+$VenvPythonExe = Join-Path $VenvDir "Scripts\python.exe"
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $LogFile = Join-Path $LogDir "install-$Timestamp.log"
 
@@ -108,22 +114,62 @@ function Test-CommandSuccess {
     }
 }
 
-function Get-PythonRuntime {
-    $Candidates = @(
-        @{ Exe = "py"; Args = @("-3.11") },
-        @{ Exe = "python"; Args = @() }
+function New-PythonRuntime {
+    param(
+        [string]$Exe,
+        [string[]]$Args = @(),
+        [string]$Description
     )
 
-    foreach ($Candidate in $Candidates) {
-        $ProbeArgs = @($Candidate.Args + @("-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"))
-        if (Test-CommandSuccess -FilePath $Candidate.Exe -Arguments $ProbeArgs) {
-            return [pscustomobject]@{
-                Exe = $Candidate.Exe
-                Args = $Candidate.Args
-            }
+    return [pscustomobject]@{
+        Exe = $Exe
+        Args = $Args
+        Description = $Description
+    }
+}
+
+function Get-VenvPythonRuntime {
+    if (Test-Path -LiteralPath $VenvPythonExe) {
+        if (Test-CommandSuccess -FilePath $VenvPythonExe -Arguments @("-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)")) {
+            return New-PythonRuntime -Exe $VenvPythonExe -Description "Hermit virtual environment"
         }
     }
     return $null
+}
+
+function Get-BootstrapPythonRuntime {
+    $Candidates = @(
+        @{ Exe = $ManagedPythonExe; Args = @(); Description = "Hermit managed Python" },
+        @{ Exe = "py"; Args = @("-3.11"); Description = "Python launcher 3.11" },
+        @{ Exe = "python"; Args = @(); Description = "system Python" }
+    )
+
+    foreach ($Candidate in $Candidates) {
+        if ([System.IO.Path]::IsPathRooted($Candidate.Exe) -and -not (Test-Path -LiteralPath $Candidate.Exe)) {
+            continue
+        }
+        $ProbeArgs = @($Candidate.Args + @("-c", "import sys; raise SystemExit(0 if sys.version_info >= (3, 10) else 1)"))
+        if (Test-CommandSuccess -FilePath $Candidate.Exe -Arguments $ProbeArgs) {
+            return New-PythonRuntime -Exe $Candidate.Exe -Args $Candidate.Args -Description $Candidate.Description
+        }
+    }
+    return $null
+}
+
+function Invoke-NativeCommand {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments
+    )
+
+    $Output = & $FilePath @Arguments 2>&1
+    $ExitCode = $LASTEXITCODE
+    foreach ($Line in $Output) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$Line)) {
+            Write-Log -Level "CMD" -Message ([string]$Line)
+        }
+    }
+    return [int]$ExitCode
 }
 
 function Invoke-Python {
@@ -132,8 +178,7 @@ function Invoke-Python {
         [string[]]$Arguments
     )
 
-    & $Python.Exe @($Python.Args + $Arguments)
-    return $LASTEXITCODE
+    return Invoke-NativeCommand -FilePath $Python.Exe -Arguments @($Python.Args + $Arguments)
 }
 
 function Test-IsAdministrator {
@@ -145,11 +190,11 @@ function Test-IsAdministrator {
 function Install-PythonRuntime {
     param([object]$Manifest)
 
-    $Python = Get-PythonRuntime
+    $Python = Get-BootstrapPythonRuntime
     if ($null -ne $Python) {
         $CommandParts = @($Python.Exe) + @($Python.Args)
         $CommandText = ($CommandParts -join " ").Trim()
-        Write-Log "Python >= 3.10 detected through '$CommandText'."
+        Write-Log "Python >= 3.10 detected through '$CommandText' ($($Python.Description))."
         return $Python
     }
 
@@ -165,16 +210,19 @@ function Install-PythonRuntime {
 
     $PythonArgs = @(
         "/quiet",
-        "InstallAllUsers=1",
-        "PrependPath=1",
+        "InstallAllUsers=0",
+        "TargetDir=`"$ManagedPythonDir`"",
+        "PrependPath=0",
         "Include_pip=1",
-        "Include_test=0"
+        "Include_test=0",
+        "Include_launcher=0",
+        "Shortcuts=0"
     )
 
-    Write-Log "Python >= 3.10 not detected. Installing from local asset."
+    Write-Log "Python >= 3.10 not detected. Installing managed Python under Hermit runtime."
     if ($DryRun) {
         Write-Log -Level "DRYRUN" -Message "Would run: $InstallerPath $($PythonArgs -join ' ')"
-        return [pscustomobject]@{ Exe = "py"; Args = @("-3.11") }
+        return New-PythonRuntime -Exe $ManagedPythonExe -Description "Hermit managed Python"
     }
 
     $Process = Start-Process -FilePath $InstallerPath -ArgumentList $PythonArgs -Wait -PassThru -WindowStyle Hidden
@@ -182,11 +230,40 @@ function Install-PythonRuntime {
         Stop-Install -Message "Python installer failed with exit code $($Process.ExitCode)" -ExitCode 1
     }
 
-    $Python = Get-PythonRuntime
+    $Python = Get-BootstrapPythonRuntime
     if ($null -eq $Python) {
         Stop-Install -Message "Python installation completed but Python >= 3.10 was not detected" -ExitCode 1
     }
     return $Python
+}
+
+function Initialize-PythonEnvironment {
+    param([object]$Manifest)
+
+    $VenvPython = Get-VenvPythonRuntime
+    if ($null -ne $VenvPython) {
+        Write-Log "Python virtual environment detected at Hermit runtime."
+        return $VenvPython
+    }
+
+    $BootstrapPython = Install-PythonRuntime -Manifest $Manifest
+    if ($DryRun) {
+        Write-Log -Level "DRYRUN" -Message "Would create Python virtual environment: $VenvDir"
+        return New-PythonRuntime -Exe $VenvPythonExe -Description "Hermit virtual environment"
+    }
+
+    New-Item -ItemType Directory -Force -Path $RuntimeRoot | Out-Null
+    Write-Log "Creating Python virtual environment under Hermit runtime."
+    $ExitCode = Invoke-Python -Python $BootstrapPython -Arguments @("-m", "venv", $VenvDir)
+    if ($ExitCode -ne 0) {
+        Stop-Install -Message "Python virtual environment creation failed with exit code $ExitCode" -ExitCode 1
+    }
+
+    $VenvPython = Get-VenvPythonRuntime
+    if ($null -eq $VenvPython) {
+        Stop-Install -Message "Python virtual environment was created but is not usable" -ExitCode 1
+    }
+    return $VenvPython
 }
 
 function Install-PythonPackages {
@@ -199,7 +276,7 @@ function Install-PythonPackages {
 
     $PipArgs = @("-m", "pip", "install", "--no-index", "--find-links", $WheelsDir, "python-docx")
     if ($DryRun) {
-        Write-Log -Level "DRYRUN" -Message "Would run Python package install from local wheels."
+        Write-Log -Level "DRYRUN" -Message "Would install Python packages into virtual environment from local wheels."
         return
     }
 
@@ -361,6 +438,9 @@ function Configure-RuntimeSecrets {
     if ($NoConfigPrompt) {
         $ConfigureArgs += "-NoPrompt"
     }
+    if ($NoDefaultRuntimeConfig) {
+        $ConfigureArgs += "-NoDefaultConfig"
+    }
 
     Write-Log "Running runtime config setup"
     & powershell.exe @ConfigureArgs
@@ -473,7 +553,7 @@ try {
         Stop-Install -Message "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" -ExitCode 1
     }
 
-    $Python = Install-PythonRuntime -Manifest $Manifest
+    $Python = Initialize-PythonEnvironment -Manifest $Manifest
     Install-PythonPackages -Python $Python
     Install-HermesDesktop -Manifest $Manifest
     Install-HermesConfig -Manifest $Manifest

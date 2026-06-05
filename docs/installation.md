@@ -10,7 +10,7 @@
 4. `install.ps1` 初始化日志目录。
 5. `install.ps1` 调用 `scripts/verify-assets.ps1` 校验本地安装资源。
 6. 脚本检测 Windows、PowerShell、CPU 架构和 Python 版本。
-7. 脚本安装或复用 Python，并从 `assets/wheels/` 本地安装 Python 依赖。
+7. 脚本安装或复用 Python 创建 Hermit 专属虚拟环境，并从 `assets/wheels/` 本地安装 Python 依赖到该虚拟环境。
 8. 脚本静默安装 Hermes 桌面端。
 9. 脚本备份现有 Hermes 配置，并注入 `assets/config/config_template.zip`。
 10. 脚本复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
@@ -41,7 +41,19 @@ assets/
 assets/installers/python-3.11.9-amd64.exe
 ```
 
-安装脚本会优先复用已存在且版本满足要求的 Python。只有找不到 Python >= 3.10 时，才使用本地安装包。
+安装脚本会优先复用已存在且版本满足要求的 Python 作为 bootstrap，用它创建 Hermit 专属虚拟环境。Python 依赖会安装到：
+
+```text
+%LOCALAPPDATA%\Hermit\runtime\venv
+```
+
+这不会写入系统 Python 或用户全局 `site-packages`。只有找不到 Python >= 3.10 时，才使用本地安装包安装一个 Hermit 管理的 Python：
+
+```text
+%LOCALAPPDATA%\Hermit\runtime\Python311
+```
+
+该安装使用 `InstallAllUsers=0` 和 `PrependPath=0`，不写系统 PATH。
 
 ## Python wheel 包
 
@@ -54,10 +66,10 @@ py -3.11 -m pip download `
   python-docx
 ```
 
-目标机器安装依赖时必须优先使用本地 wheel：
+目标机器安装依赖时必须优先使用 Hermit 虚拟环境和本地 wheel：
 
 ```powershell
-python -m pip install --no-index --find-links assets/wheels python-docx
+%LOCALAPPDATA%\Hermit\runtime\venv\Scripts\python.exe -m pip install --no-index --find-links assets/wheels python-docx
 ```
 
 ## Hermes 安装包
@@ -85,10 +97,11 @@ assets/config/config_template.zip
 Hermit 支持“预配置优先、缺失则提示”的配置流程：
 
 1. 可提前复制 `assets/config/runtime.example.json` 为 `assets/config/runtime.local.json`。
-2. 在 `runtime.local.json` 中填入外部 API Key、Base URL、微信/移动端远程控制参数。
-3. `runtime.local.json` 会被 `.gitignore` 排除，不应提交到公开仓库。
-4. 安装脚本会优先导入 `assets/config/runtime.local.json`。
-5. 如果没有预配置文件，真实安装会提示用户输入配置。
+2. 也可以使用兼容路径 `assets/config/config.json`。
+3. 在本地配置文件中填入外部 API Key、Base URL、微信/移动端远程控制参数。
+4. `runtime.local.json` 和 `config.json` 会被 `.gitignore` 排除，不应提交到公开仓库。
+5. 安装脚本会优先导入 `assets/config/runtime.local.json`，其次导入 `assets/config/config.json`。
+6. 如果没有预配置文件，真实安装会提示用户输入配置。
 
 配置向导也可以单独运行：
 

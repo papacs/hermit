@@ -32,7 +32,7 @@ try {
 }
 "@ | Set-Content -Encoding UTF8 -LiteralPath $TempManifest
 
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums -DryRun
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile $TempManifest -ChecksumFile $TempChecksums -DryRun -NoDefaultRuntimeConfig
     if ($LASTEXITCODE -ne 0) {
         throw "Expected ready manifest dry-run to exit with code 0, got $LASTEXITCODE"
     }
@@ -57,6 +57,12 @@ try {
     }
     if ($LogText -notmatch "Dry-run: would prompt for runtime config") {
         throw "Expected install dry-run to avoid interactive runtime config prompt"
+    }
+    if ($LogText -notmatch "Python virtual environment") {
+        throw "Expected install dry-run to create or reuse a Hermit Python virtual environment"
+    }
+    if ($LogText -notmatch "Would install Python packages into virtual environment") {
+        throw "Expected install dry-run to install Python packages into the virtual environment"
     }
 }
 finally {
