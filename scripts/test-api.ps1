@@ -6,6 +6,7 @@ param(
     [int]$MaxTokens = 64,
     [int]$TimeoutSec = 60,
     [string]$Proxy,
+    [switch]$NoProxy,
     [switch]$ProxyUseDefaultCredentials,
     [switch]$SkipNetworkDiagnostics,
     [switch]$DryRun,
@@ -190,6 +191,46 @@ function Set-NetworkDefaults {
     }
 }
 
+function Set-NoProxyMode {
+    try {
+        [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy
+    }
+    catch {
+        Write-Warn -Message ("Unable to disable the default web proxy: {0}" -f $_.Exception.Message)
+    }
+}
+
+function Test-LoopbackHost {
+    param([string]$HostName)
+
+    return (
+        $HostName.Equals("localhost", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $HostName.Equals("127.0.0.1", [System.StringComparison]::OrdinalIgnoreCase) -or
+        $HostName.Equals("::1", [System.StringComparison]::OrdinalIgnoreCase)
+    )
+}
+
+function Write-ProxyTcpDiagnostic {
+    param([System.Uri]$ProxyUri)
+
+    if ($null -eq $ProxyUri -or [string]::IsNullOrWhiteSpace($ProxyUri.Host) -or $ProxyUri.Port -le 0) {
+        return
+    }
+
+    try {
+        $ProxyTcpOk = Test-NetConnection -ComputerName $ProxyUri.Host -Port $ProxyUri.Port -InformationLevel Quiet
+        Write-Info ("Proxy TCP {0}:{1}: {2}" -f $ProxyUri.Host, $ProxyUri.Port, $ProxyTcpOk)
+
+        if (-not $ProxyTcpOk -and (Test-LoopbackHost -HostName $ProxyUri.Host)) {
+            Write-Warn ("System proxy points to {0}, but no local proxy service is accepting connections there." -f $ProxyUri.AbsoluteUri)
+            Write-Warn "Start the proxy application, fix the Windows proxy port, disable the system proxy, or rerun this script with -NoProxy if direct access is allowed."
+        }
+    }
+    catch {
+        Write-Warn ("Proxy TCP check failed: {0}" -f $_.Exception.Message)
+    }
+}
+
 function Write-NetworkDiagnostics {
     param([System.Uri]$Endpoint)
 
@@ -215,7 +256,19 @@ function Write-NetworkDiagnostics {
         Write-Warn ("TCP check failed: {0}" -f $_.Exception.Message)
     }
 
+    if ($NoProxy) {
+        Write-Info "Proxy: direct (-NoProxy)"
+        return
+    }
+
     try {
+        if (-not [string]::IsNullOrWhiteSpace($Proxy)) {
+            $ExplicitProxyUri = [System.Uri]$Proxy
+            Write-Info ("Proxy: {0} (explicit)" -f $ExplicitProxyUri.AbsoluteUri)
+            Write-ProxyTcpDiagnostic -ProxyUri $ExplicitProxyUri
+            return
+        }
+
         $SystemProxy = [System.Net.WebRequest]::GetSystemWebProxy()
         $ProxyUri = $SystemProxy.GetProxy($Endpoint)
         if ($SystemProxy.IsBypassed($Endpoint) -or $ProxyUri.AbsoluteUri -eq $Endpoint.AbsoluteUri) {
@@ -223,6 +276,7 @@ function Write-NetworkDiagnostics {
         }
         else {
             Write-Info ("Proxy: {0}" -f $ProxyUri.AbsoluteUri)
+            Write-ProxyTcpDiagnostic -ProxyUri $ProxyUri
         }
     }
     catch {
@@ -231,6 +285,10 @@ function Write-NetworkDiagnostics {
 }
 
 Set-NetworkDefaults
+
+if ($NoProxy -and -not [string]::IsNullOrWhiteSpace($Proxy)) {
+    Fail "Use either -NoProxy or -Proxy, not both."
+}
 
 $ResolvedConfigFile = Resolve-InputPath -Path $ConfigFile
 if (-not (Test-Path -LiteralPath $ResolvedConfigFile)) {
@@ -306,6 +364,15 @@ Write-Info ("Endpoint: {0}" -f $Endpoint.AbsoluteUri)
 Write-Info ("Model: {0}" -f $Model)
 Write-Info ("TimeoutSec: {0}" -f $TimeoutSec)
 Write-Info ("Log file: {0}" -f $LogFile)
+if ($NoProxy) {
+    Write-Info "ProxyMode: direct (-NoProxy)"
+}
+elseif (-not [string]::IsNullOrWhiteSpace($Proxy)) {
+    Write-Info ("ProxyMode: explicit ({0})" -f $Proxy)
+}
+else {
+    Write-Info "ProxyMode: system default"
+}
 
 if ($ProviderName.Equals("deepseek", [System.StringComparison]::OrdinalIgnoreCase) -and
     $BaseUrl.TrimEnd("/").Equals("https://api.deepseek.com/v1", [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -315,6 +382,10 @@ if ($ProviderName.Equals("deepseek", [System.StringComparison]::OrdinalIgnoreCas
 if ($DryRun) {
     Write-Info "Dry-run: request not sent."
     exit 0
+}
+
+if ($NoProxy) {
+    Set-NoProxyMode
 }
 
 Write-NetworkDiagnostics -Endpoint $Endpoint

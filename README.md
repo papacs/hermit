@@ -106,6 +106,12 @@ Set-Location <Hermit项目目录>
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
 ```
 
+如果系统代理指向本机端口但代理程序未启动，可先关闭 Windows 代理，或临时绕过系统代理：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1 -NoProxy
+```
+
 安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
 
 ```powershell

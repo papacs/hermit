@@ -64,6 +64,18 @@ try {
         throw "API dry-run output leaked an API key"
     }
 
+    Write-Host "[TEST] API dry-run should support bypassing the system proxy"
+    $NoProxyResult = Invoke-ApiTestScript -Arguments @("-DryRun", "-NoProxy")
+    if ($NoProxyResult.ExitCode -ne 0) {
+        throw "Expected API dry-run with NoProxy to exit 0, got $($NoProxyResult.ExitCode). Output: $($NoProxyResult.Output)"
+    }
+    if ($NoProxyResult.Output -notmatch "ProxyMode: direct \(-NoProxy\)") {
+        throw "Expected NoProxy dry-run output to explain that the system proxy will be bypassed"
+    }
+    if ($NoProxyResult.Output -match "sk-dry-run-secret") {
+        throw "API dry-run with NoProxy output leaked an API key"
+    }
+
     Write-Host "[TEST] API dry-run should infer default provider for legacy config"
     Write-TestConfig -JsonText @"
 {

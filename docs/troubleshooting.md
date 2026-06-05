@@ -203,6 +203,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1
 ```
 
 - 该脚本会读取 `%LOCALAPPDATA%\Hermit\config\runtime.secrets.json`，不打印 API Key，并输出 DNS、TCP、代理、HTTP 状态、响应体和内层异常。
+- 如果输出类似 `Proxy: http://127.0.0.1:3067`，并且内层异常提示 `127.0.0.1:3067` 连接被拒绝，说明 Windows 系统代理已开启但本机代理程序未监听该端口。关闭 Windows 代理、启动对应代理程序、修正代理端口，或运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\test-api.ps1 -NoProxy
+```
+
 - 如果没有 HTTP 状态码，通常是 TLS、证书、代理、防火墙流量检查或 Windows PowerShell/.NET HTTP 栈问题。
 - 如果返回 HTTP 400，优先检查 `model`、`baseUrl` 和请求体；如果返回 HTTP 401，优先检查 API Key 是否无效或已撤销。
 
