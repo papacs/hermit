@@ -68,7 +68,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\verify-assets-test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-tests.ps1
 ```
 
-从 GitHub 直接克隆的公开仓库不包含安装器、wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会默认尝试联网运行 `scripts/prepare-assets.ps1`，下载官方安装包和 CPython 3.11 wheels，并生成本地 manifest/checksum。使用 `-NoOnlineBootstrap` 可禁用联网准备；禁用后缺资源会返回退出码 `2`。
+从 GitHub 直接克隆的公开仓库已包含固定版本的 Python/Hermes 安装器，但不包含 wheel、本地清单和私有配置。若本地安装资源未准备完成，`scripts/install.ps1` 会默认尝试联网运行 `scripts/prepare-assets.ps1`，补齐 CPython 3.11 wheels，并生成本地 manifest/checksum。使用 `-NoOnlineBootstrap` 可禁用联网准备；禁用后缺资源会返回退出码 `2`。
 
 使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 

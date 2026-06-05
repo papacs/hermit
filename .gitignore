@@ -26,6 +26,8 @@ assets/config/runtime.local.json
 assets/manifest.local.json
 assets/checksums.local.sha256
 !assets/installers/.gitkeep
+!assets/installers/python-3.11.9-amd64.exe
+!assets/installers/hermes-desktop-setup.exe
 !assets/wheels/.gitkeep
 
 # Secrets and local config

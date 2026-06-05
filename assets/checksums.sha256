@@ -1,9 +1,4 @@
-﻿# Format:
+# Format:
 # <sha256>  <relative-path>
-#
-# Example after assets are downloaded:
-# 64 lowercase hex characters  assets/installers/python-3.11.9-amd64.exe
-
-
-
-
+5ee42c4eee1e6b4464bb23722f90b45303f79442df63083f05322f1785f5fdde  assets/installers/python-3.11.9-amd64.exe
+de1de2a339ce52f25fe85cf5098e25269180a3c40d5c26ef4433a2caef58ff91  assets/installers/hermes-desktop-setup.exe
