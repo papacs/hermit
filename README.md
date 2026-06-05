@@ -70,6 +70,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests\install-bootstrap-
 
 从 GitHub 直接克隆的公开仓库已包含固定版本的 Python/Hermes 安装器、CPython 3.11 wheels 和无密钥配置模板；不包含真实 API Key、微信/移动端远程控制参数等私有配置。默认情况下可以直接离线执行安装计划；只有当资源被删除或需要刷新版本时，才需要联网运行 `scripts/prepare-assets.ps1` 重建本地 manifest/checksum。
 
+Hermes Desktop 官方安装器目前会弹出交互界面，并可能在其内部 `uv` bootstrap 阶段失败且写出 0KB 日志。为避免阻塞 Hermit 自身安装，`一键唤醒隐士.bat` 默认不再运行 Hermes 外部安装器；需要手动尝试时可运行 `assets/installers/hermes-desktop-setup.exe`，或执行 `scripts/install.ps1 -InstallHermes`。
+
 使用 `-DryRun` 可以完整验证安装计划而不触发真实安装：
 
 ```powershell

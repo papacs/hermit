@@ -24,6 +24,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
 
 该命令会把本机日志打包到项目内 `diagnostics/` 目录。诊断包不应提交到公开仓库。
 
+`collect-logs.ps1` 会同时收集 `%LOCALAPPDATA%\Hermit\logs\` 和 `%LOCALAPPDATA%\hermes\logs\`。如果 Hermes 的 `bootstrap-installer.log` 是 0KB，说明外部 Hermes 安装器没有写出有效诊断内容；Hermit 主日志仍以 `install-YYYYMMDD-HHMMSS.log` 为准。
+
 ## 常见问题
 
 ### 安装脚本退出码
@@ -138,6 +140,32 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\prepare-assets.p
 ```
 
 - 如果机器不能联网，直接使用仓库已提交的公开离线资源；如需使用自定义资源包，再从已准备好的机器复制 `assets/manifest.local.json`、`assets/checksums.local.sha256`、`assets/installers/`、`assets/wheels/` 和 `assets/config/config_template.zip`。
+
+### Hermes Setup 弹窗并提示 uv installation failed
+
+现象：
+
+- 安装过程中弹出 `Hermes Setup` 图形界面。
+- 界面显示 `INSTALL DIDN'T FINISH` 和 `uv installation failed`。
+- `%LOCALAPPDATA%\hermes\logs\bootstrap-installer.log` 存在但大小为 0KB。
+
+原因：
+
+- 这是 Hermes Desktop 外部安装器内部 bootstrap 失败，不是 Hermit 的 Python venv、wheel、Word Skill 或配置安装失败。
+- 该安装器当前不是可靠静默安装器，且失败时可能不写有效日志。
+- 该安装器会从 GitHub 下载 Hermes 自己的 `install.ps1`，再安装 `uv`、Git、Node.js、ripgrep、ffmpeg，并 clone/build Hermes 桌面端；它不是单文件离线安装器。
+
+处理：
+
+- 拉取包含修复的最新代码后，`一键唤醒隐士.bat` 默认会跳过 Hermes 外部安装器，不再弹出该界面。
+- 需要单独尝试 Hermes 官方安装器时，手动运行 `assets/installers/hermes-desktop-setup.exe`，或执行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -InstallHermes
+```
+
+- 只有需要把 Hermes 安装失败视为整体验收失败时，才使用 `-RequireHermesInstall`。
+- 提交排障信息时，运行 `scripts\collect-logs.ps1`；诊断包会包含 Hermit 主日志和 Hermes bootstrap 日志。
 
 ### 运行期配置未完成
 

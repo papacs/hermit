@@ -36,8 +36,30 @@ try {
     if ($PublicLogText -notmatch "Verified: assets/wheels/lxml") {
         throw "Expected public manifest dry-run to verify committed wheels"
     }
+    if ($PublicLogText -notmatch "Would skip Hermes Desktop installer by default") {
+        throw "Expected public manifest dry-run to skip Hermes installer by default"
+    }
+    if ($PublicLogText -match "Would run optional Hermes Desktop installer") {
+        throw "Expected public manifest dry-run not to run optional Hermes installer by default"
+    }
     if ($PublicLogText -notmatch "Hermit installer completed successfully") {
         throw "Expected public manifest dry-run to complete install plan"
+    }
+
+    Write-Host "[TEST] Hermes installer should be opt-in during dry-run"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $InstallScript -ManifestFile (Join-Path $RepoRoot "assets\manifest.json") -ChecksumFile (Join-Path $RepoRoot "assets\checksums.sha256") -DryRun -NoDefaultRuntimeConfig -NoOnlineBootstrap -InstallHermes
+    if ($LASTEXITCODE -ne 0) {
+        throw "Expected opt-in Hermes dry-run to exit with code 0, got $LASTEXITCODE"
+    }
+    $HermesOptInLog = Get-ChildItem -LiteralPath (Join-Path $TempLocalAppData "Hermit\logs") -Filter "install-*.log" -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($null -eq $HermesOptInLog) {
+        throw "Expected opt-in Hermes dry-run to create a log file"
+    }
+    $HermesOptInLogText = Get-Content -Raw -Encoding UTF8 -LiteralPath $HermesOptInLog.FullName
+    if ($HermesOptInLogText -notmatch "Would run optional Hermes Desktop installer") {
+        throw "Expected opt-in Hermes dry-run to describe installer launch"
     }
 
     Set-Content -Encoding UTF8 -LiteralPath $TempChecksums -Value "# no active records"

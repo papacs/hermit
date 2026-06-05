@@ -8,7 +8,9 @@ param(
     [switch]$NoDefaultRuntimeConfig,
     [switch]$RequireRuntimeConfig,
     [switch]$NoOnlineBootstrap,
-    [string[]]$HermesSilentArgs = @("/S")
+    [switch]$InstallHermes,
+    [switch]$RequireHermesInstall,
+    [string[]]$HermesSilentArgs = @()
 )
 
 $ErrorActionPreference = "Stop"
@@ -321,14 +323,51 @@ function Install-HermesDesktop {
         Stop-Install -Message "Hermes installer not found: $($HermesInstaller.path)" -ExitCode 1
     }
 
-    if ($DryRun) {
-        Write-Log -Level "DRYRUN" -Message "Would run Hermes installer: $InstallerPath $($HermesSilentArgs -join ' ')"
+    if (-not $InstallHermes -and -not $RequireHermesInstall) {
+        if ($DryRun) {
+            Write-Log -Level "DRYRUN" -Message "Would skip Hermes Desktop installer by default."
+        }
+        else {
+            Write-Log -Level "WARN" -Message "Skipping Hermes Desktop installer by default because the bundled installer is interactive and may fail during its internal uv bootstrap."
+        }
+        Write-Log "Hermes installer is available for manual use: $InstallerPath"
+        Write-Log "To try it from Hermit, rerun scripts\install.ps1 -InstallHermes. Add -RequireHermesInstall only when Hermes installation must be fatal."
         return
     }
 
-    $Process = Start-Process -FilePath $InstallerPath -ArgumentList $HermesSilentArgs -Wait -PassThru -WindowStyle Hidden
+    if ($DryRun) {
+        $ArgsText = if ($HermesSilentArgs.Count -gt 0) { $HermesSilentArgs -join " " } else { "(no arguments)" }
+        Write-Log -Level "DRYRUN" -Message "Would run optional Hermes Desktop installer: $InstallerPath $ArgsText"
+        return
+    }
+
+    $Process = Start-Process -FilePath $InstallerPath -ArgumentList $HermesSilentArgs -Wait -PassThru
+    Write-Log "Hermes installer finished with exit code $($Process.ExitCode)."
     if ($Process.ExitCode -ne 0) {
-        Stop-Install -Message "Hermes installer failed with exit code $($Process.ExitCode)" -ExitCode 1
+        Write-HermesInstallerDiagnostics
+        if ($RequireHermesInstall) {
+            Stop-Install -Message "Hermes installer failed with exit code $($Process.ExitCode)" -ExitCode 1
+        }
+        Write-Log -Level "WARN" -Message "Hermes installer failed, but Hermit installation will continue because Hermes is optional by default."
+    }
+}
+
+function Write-HermesInstallerDiagnostics {
+    $HermesInstallerLog = Join-Path $LocalAppData "hermes\logs\bootstrap-installer.log"
+    if (-not (Test-Path -LiteralPath $HermesInstallerLog)) {
+        Write-Log -Level "WARN" -Message "Hermes installer log was not found: $HermesInstallerLog"
+        return
+    }
+
+    try {
+        $LogItem = Get-Item -LiteralPath $HermesInstallerLog
+        Write-Log -Level "WARN" -Message "Hermes installer log: $HermesInstallerLog ($($LogItem.Length) bytes)"
+        if ($LogItem.Length -eq 0) {
+            Write-Log -Level "WARN" -Message "Hermes installer log is empty; this is an upstream installer/bootstrap issue, not a Hermit log write failure."
+        }
+    }
+    catch {
+        Write-Log -Level "WARN" -Message "Unable to inspect Hermes installer log: $($_.Exception.Message)"
     }
 }
 

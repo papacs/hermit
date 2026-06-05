@@ -11,7 +11,7 @@
 5. `install.ps1` 调用 `scripts/verify-assets.ps1` 校验本地安装资源。
 6. 脚本检测 Windows、PowerShell、CPU 架构和 Python 版本。
 7. 脚本安装或复用 Python 创建 Hermit 专属虚拟环境，并从 `assets/wheels/` 本地安装 Python 依赖到该虚拟环境。
-8. 脚本静默安装 Hermes 桌面端。
+8. 脚本默认跳过 Hermes 外部安装器；如需尝试官方安装器，显式传入 `-InstallHermes`。
 9. 脚本备份现有 Hermes 配置，并注入 `assets/config/config_template.zip`。
 10. 脚本复制 `hermit_skills/` 到 `%USERPROFILE%\Hermit_Skills\`。
 11. 脚本导入或提示填写运行期密钥配置。
@@ -80,7 +80,19 @@ py -3.11 -m pip download `
 assets/installers/hermes-desktop-setup.exe
 ```
 
-静默安装参数需要基于实际安装包验证。脚本不得假设所有安装器都支持相同参数。
+Hermes Desktop 官方安装器目前会弹出交互界面，并可能在内部 `uv` bootstrap 阶段失败。Hermit 默认不运行该外部安装器，以免阻塞 Python、Skill、沙箱和运行期配置安装。需要尝试安装 Hermes 时，可手动运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -InstallHermes
+```
+
+如果希望 Hermes 安装失败时让整个安装失败，再使用：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -InstallHermes -RequireHermesInstall
+```
+
+安装参数需要基于实际安装包验证。脚本不得假设所有安装器都支持相同参数。
 
 ## 配置模板
 
@@ -121,6 +133,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\configure.ps1 -C
 - `-SkipRuntimeConfig`：本次安装跳过运行期密钥配置。
 - `-NoConfigPrompt`：没有预配置时不交互提示，返回 warning 后继续安装。
 - `-RequireRuntimeConfig`：配置失败或跳过时让安装失败。
+- `-InstallHermes`：显式尝试运行 Hermes Desktop 外部安装器。
+- `-RequireHermesInstall`：Hermes 外部安装器失败时让安装失败。
 
 配置最终写入：
 
