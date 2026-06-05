@@ -5,6 +5,7 @@ $VerifyScript = Join-Path $RepoRoot "scripts\verify-assets.ps1"
 $TempDir = Join-Path $RepoRoot "tests\.tmp"
 $TempFile = Join-Path $TempDir "hash-target.txt"
 $TempChecksumFile = Join-Path $TempDir "checksums.sha256"
+$TempLogFile = Join-Path $TempDir "logs\verify-assets.log"
 
 if (-not (Test-Path -LiteralPath $VerifyScript)) {
     throw "scripts/verify-assets.ps1 is missing"
@@ -25,14 +26,23 @@ $RelativePath = "tests/.tmp/hash-target.txt"
 Set-Content -Encoding UTF8 -LiteralPath $TempChecksumFile -Value "$Hash  $RelativePath"
 
 try {
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $TempChecksumFile
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $TempChecksumFile -LogFile $TempLogFile
     if ($LASTEXITCODE -ne 0) {
         throw "Expected valid checksum record to pass, got exit code $LASTEXITCODE"
+    }
+
+    $LogText = Get-Content -Raw -Encoding UTF8 -LiteralPath $TempLogFile
+    if ($LogText -notmatch "Verified: tests/.tmp/hash-target.txt") {
+        throw "Expected verification log file to contain verified asset output"
     }
 }
 finally {
     if (Test-Path -LiteralPath $TempDir) {
-        Remove-Item -LiteralPath $TempDir -Recurse -Force
+        $ResolvedTempDir = (Resolve-Path -LiteralPath $TempDir).Path
+        if (-not $ResolvedTempDir.StartsWith($RepoRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Refusing to clean temp directory outside repo: $ResolvedTempDir"
+        }
+        Remove-Item -LiteralPath $ResolvedTempDir -Recurse -Force
     }
 }
 

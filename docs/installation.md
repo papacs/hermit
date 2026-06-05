@@ -1,6 +1,6 @@
 # Hermit 安装与离线资源准备
 
-本文档描述 Hermit 的目标安装方式和离线资源准备流程。当前阶段尚未实现完整安装脚本，以下内容是实现脚本时必须遵守的契约。
+本文档描述 Hermit 的目标安装方式和离线资源准备流程。当前脚本已实现 dry-run 和安装流程编排；真实安装仍需在目标 Windows 环境完成验收。
 
 ## 目标安装流程
 
@@ -39,7 +39,7 @@ assets/
 assets/installers/python-3.11.9-amd64.exe
 ```
 
-安装脚本后续应优先复用已存在且版本满足要求的 Python。只有找不到 Python >= 3.10 时，才使用本地安装包。
+安装脚本会优先复用已存在且版本满足要求的 Python。只有找不到 Python >= 3.10 时，才使用本地安装包。
 
 ## Python wheel 包
 
@@ -104,6 +104,12 @@ assets/config/config_template.zip
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-assets.ps1 -ChecksumFile assets\checksums.local.sha256
 ```
 
+如果需要把资源校验输出并入安装日志，可传入 `-LogFile`：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-assets.ps1 -ChecksumFile assets\checksums.local.sha256 -LogFile "$env:LOCALAPPDATA\Hermit\logs\manual-verify.log"
+```
+
 当前已确认的官方下载来源：
 
 - Python 3.11.9 Windows x64：`https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
@@ -122,6 +128,16 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - `0`：安装计划验证通过。
 - `1`：校验或环境错误。
 - `2`：公开 bootstrap 清单未就绪。
+
+## 日志与诊断
+
+安装脚本会将日志写入 `%LOCALAPPDATA%\Hermit\logs\install-YYYYMMDD-HHMMSS.log`。日志包含主安装步骤、资源校验输出、dry-run 计划、失败退出码和未捕获异常摘要。
+
+收集日志诊断包：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
+```
 
 ## Hermes 配置路径
 

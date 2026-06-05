@@ -2,7 +2,7 @@
 
 Hermit 是一个面向 Windows 10/11 普通用户的本地化 AI 办公自动化部署包。它的目标是把 Python 运行环境、离线依赖、Hermes 桌面端配置和 AI Agent 可调用的 `.docx` 文档处理技能打包到一个可离线分发、可重复执行、可排障的项目中。
 
-当前项目已完成工程骨架、文档、资源契约、安全 Word Skill 和本机离线资源准备；完整安装流程仍在后续阶段推进。
+当前项目已完成工程骨架、文档、资源契约、安全 Word Skill、本机离线资源准备和 dry-run 安装流程；真实安装仍需在干净 Windows 环境验收。
 
 ## 核心目标
 
@@ -46,7 +46,7 @@ Hermit_Project/
 | Word Skill 测试 | 已创建 | 见 `tests/test_docx_processor.py` |
 | 开源项目元数据 | 已创建 | MIT License、Security、Contributing、CI |
 | 资源校验脚本 | 已创建 | 见 `scripts/verify-assets.ps1` |
-| 安装入口骨架 | 已创建 | 见 `一键唤醒隐士.bat` 和 `scripts/install.ps1` |
+| 安装入口 | 已创建 | 见 `一键唤醒隐士.bat` 和 `scripts/install.ps1` |
 | 完整安装流程 | 已实现 dry-run | 真实安装尚需在干净 Windows 环境验收 |
 | 本地离线资源 | 本机已准备 | Python、Hermes、wheels、config zip 已下载/生成；本地清单不提交 |
 
@@ -56,7 +56,7 @@ Hermit_Project/
 2. 阅读 `TODO.md` 按阶段推进。
 3. 按 `docs/installation.md` 准备离线资源。
 4. 运行 `scripts/verify-assets.ps1` 校验资源清单。
-5. 继续实现完整安装流程。
+5. 运行 `scripts/install.ps1 -DryRun` 验证安装计划，再在干净 Windows 环境做真实安装验收。
 
 当前可以运行的验证命令：
 
@@ -73,6 +73,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 ```
 
 本机已可使用 `assets/manifest.local.json` 和 `assets/checksums.local.sha256` 表示本地离线资源就绪；这些文件被 `.gitignore` 排除，不应提交到公开仓库。`scripts/install.ps1` 会优先读取本地清单，未发现本地清单时回退到公开 bootstrap 清单。
+
+安装日志写入 `%LOCALAPPDATA%\Hermit\logs\`。需要打包排障信息时运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
+```
 
 ## 安全原则
 

@@ -1,5 +1,6 @@
 param(
-    [string]$ChecksumFile
+    [string]$ChecksumFile,
+    [string]$LogFile
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,14 +12,48 @@ if ([string]::IsNullOrWhiteSpace($ChecksumFile)) {
     $ChecksumFile = Join-Path $RepoRoot "assets\checksums.sha256"
 }
 
+function Write-Line {
+    param(
+        [string]$Line,
+        [string]$Color
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Color)) {
+        Write-Host $Line
+    }
+    else {
+        Write-Host $Line -ForegroundColor $Color
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($LogFile)) {
+        for ($Attempt = 1; $Attempt -le 5; $Attempt++) {
+            try {
+                $LogParent = Split-Path -Parent $LogFile
+                if (-not [string]::IsNullOrWhiteSpace($LogParent)) {
+                    New-Item -ItemType Directory -Force -Path $LogParent | Out-Null
+                }
+                Add-Content -Encoding UTF8 -LiteralPath $LogFile -Value $Line
+                break
+            }
+            catch {
+                if ($Attempt -eq 5) {
+                    Write-Host "[Hermit][WARN] Unable to write verifier log file." -ForegroundColor Yellow
+                    break
+                }
+                Start-Sleep -Milliseconds (100 * $Attempt)
+            }
+        }
+    }
+}
+
 function Write-Info {
     param([string]$Message)
-    Write-Host "[Hermit] $Message"
+    Write-Line -Line "[Hermit] $Message"
 }
 
 function Fail {
     param([string]$Message)
-    Write-Host "[Hermit][ERROR] $Message" -ForegroundColor Red
+    Write-Line -Line "[Hermit][ERROR] $Message" -Color "Red"
     exit 1
 }
 

@@ -4,17 +4,25 @@
 
 ## 日志位置
 
-安装脚本应将日志写入：
+安装脚本将日志写入：
 
 ```text
 %LOCALAPPDATA%\Hermit\logs\
 ```
 
-日志文件命名建议：
+日志文件命名：
 
 ```text
 install-YYYYMMDD-HHMMSS.log
 ```
+
+安装日志包含主安装步骤、资源校验输出、退出码和未捕获异常摘要。需要给维护者提交排障信息时，先运行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\collect-logs.ps1
+```
+
+该命令会把本机日志打包到项目内 `diagnostics/` 目录。诊断包不应提交到公开仓库。
 
 ## 常见问题
 
@@ -46,7 +54,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 处理：
 
 - 按 `docs/installation.md` 准备离线资源。
-- 更新 `assets/manifest.json` 和 `assets/checksums.sha256`。
+- 打包机器上更新 `assets/manifest.local.json` 和 `assets/checksums.local.sha256`。
+- 公开仓库只更新 bootstrap 用的 `assets/manifest.json` 和 `assets/checksums.sha256`。
 
 ### SHA256 校验失败
 
@@ -59,6 +68,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 - 删除异常文件。
 - 从官方渠道重新下载。
 - 重新计算 SHA256 并更新清单。
+
+### 未捕获安装异常
+
+现象：
+
+- 日志中出现 `Unhandled installer error`。
+- 控制台只显示退出码 `1`。
+
+处理：
+
+- 打开同一份 `install-YYYYMMDD-HHMMSS.log` 查看异常摘要和脚本栈。
+- 运行 `scripts\collect-logs.ps1` 生成诊断包。
+- 检查最近一次修改的清单路径、zip 包、安装器参数和权限环境。
 
 ### PowerShell 执行策略阻止脚本
 
@@ -79,7 +101,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\install.ps1 -Dry
 
 处理：
 
-- 安装脚本应使用项目内 Python 3.11.9 安装包。
+- 安装脚本会使用项目内 Python 3.11.9 安装包。
 - 如果选择系统级安装，脚本必须避免重复追加 PATH。
 
 ### Hermes 配置被覆盖

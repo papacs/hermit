@@ -17,7 +17,13 @@ $BackupRoot = Join-Path $LocalAppData "Hermit\backup"
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $LogFile = Join-Path $LogDir "install-$Timestamp.log"
 
-New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+try {
+    New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
+}
+catch {
+    Write-Host "[Hermit][ERROR] Unable to initialize installer log directory."
+    exit 1
+}
 
 function Write-Log {
     param(
@@ -340,88 +346,103 @@ function Test-InstallHealth {
     }
 }
 
-Write-Log "Hermit installer started"
-Write-Log "Project root: $RepoRoot"
-Write-Log "Log file: $LogFile"
-if ($DryRun) {
-    Write-Log -Level "DRYRUN" -Message "Dry run is enabled. No installers, config writes, or skill copies will be executed."
-}
-
-$DefaultManifestFile = Join-Path $RepoRoot "assets\manifest.json"
-$LocalManifestFile = Join-Path $RepoRoot "assets\manifest.local.json"
-$DefaultChecksumFile = Join-Path $RepoRoot "assets\checksums.sha256"
-$LocalChecksumFile = Join-Path $RepoRoot "assets\checksums.local.sha256"
-$VerifyScript = Join-Path $RepoRoot "scripts\verify-assets.ps1"
-
-if ([string]::IsNullOrWhiteSpace($ManifestFile)) {
-    if (Test-Path -LiteralPath $LocalManifestFile) {
-        $ManifestFile = $LocalManifestFile
-    }
-    else {
-        $ManifestFile = $DefaultManifestFile
-    }
-}
-
-if ([string]::IsNullOrWhiteSpace($ChecksumFile)) {
-    if (Test-Path -LiteralPath $LocalChecksumFile) {
-        $ChecksumFile = $LocalChecksumFile
-    }
-    else {
-        $ChecksumFile = $DefaultChecksumFile
-    }
-}
-
-if (-not (Test-Path -LiteralPath $ManifestFile)) {
-    Stop-Install -Message "Manifest file not found: $ManifestFile" -ExitCode 1
-}
-
-if (-not (Test-Path -LiteralPath $VerifyScript)) {
-    Stop-Install -Message "Asset verification script not found: $VerifyScript" -ExitCode 1
-}
-
-Write-Log "Running offline asset verification"
-Write-Log "Manifest file: $ManifestFile"
-Write-Log "Checksum file: $ChecksumFile"
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $ChecksumFile
-if ($LASTEXITCODE -ne 0) {
-    Stop-Install -Message "Asset verification failed with exit code $LASTEXITCODE" -ExitCode 1
-}
-
 try {
-    $Manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $ManifestFile | ConvertFrom-Json
+    Write-Log "Hermit installer started"
+    Write-Log "Project root: $RepoRoot"
+    Write-Log "Log file: $LogFile"
+    if ($DryRun) {
+        Write-Log -Level "DRYRUN" -Message "Dry run is enabled. No installers, config writes, or skill copies will be executed."
+    }
+
+    $DefaultManifestFile = Join-Path $RepoRoot "assets\manifest.json"
+    $LocalManifestFile = Join-Path $RepoRoot "assets\manifest.local.json"
+    $DefaultChecksumFile = Join-Path $RepoRoot "assets\checksums.sha256"
+    $LocalChecksumFile = Join-Path $RepoRoot "assets\checksums.local.sha256"
+    $VerifyScript = Join-Path $RepoRoot "scripts\verify-assets.ps1"
+
+    if ([string]::IsNullOrWhiteSpace($ManifestFile)) {
+        if (Test-Path -LiteralPath $LocalManifestFile) {
+            $ManifestFile = $LocalManifestFile
+        }
+        else {
+            $ManifestFile = $DefaultManifestFile
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($ChecksumFile)) {
+        if (Test-Path -LiteralPath $LocalChecksumFile) {
+            $ChecksumFile = $LocalChecksumFile
+        }
+        else {
+            $ChecksumFile = $DefaultChecksumFile
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $ManifestFile)) {
+        Stop-Install -Message "Manifest file not found: $ManifestFile" -ExitCode 1
+    }
+
+    if (-not (Test-Path -LiteralPath $VerifyScript)) {
+        Stop-Install -Message "Asset verification script not found: $VerifyScript" -ExitCode 1
+    }
+
+    Write-Log "Running offline asset verification"
+    Write-Log "Manifest file: $ManifestFile"
+    Write-Log "Checksum file: $ChecksumFile"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $VerifyScript -ChecksumFile $ChecksumFile -LogFile $LogFile
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Install -Message "Asset verification failed with exit code $LASTEXITCODE" -ExitCode 1
+    }
+
+    try {
+        $Manifest = Get-Content -Raw -Encoding UTF8 -LiteralPath $ManifestFile | ConvertFrom-Json
+    }
+    catch {
+        Stop-Install -Message "Manifest JSON parse failed: $($_.Exception.Message)" -ExitCode 1
+    }
+
+    if ($Manifest.packageReady -ne $true) {
+        Write-Log -Level "WARN" -Message "Offline package is not ready. Set packageReady=true only after installers, wheels, config, and checksums are complete."
+        Write-Log -Level "WARN" -Message "No installation actions were performed."
+        exit 2
+    }
+
+    if (-not $DryRun -and -not (Test-IsAdministrator)) {
+        Stop-Install -Message "Administrator privileges are required for real installation. Use the bat entrypoint or rerun PowerShell as administrator." -ExitCode 1
+    }
+
+    if (-not $IsWindows -and $PSVersionTable.PSVersion.Major -ge 6) {
+        Stop-Install -Message "Hermit installer supports Windows only" -ExitCode 1
+    }
+
+    Write-Log "PowerShell version: $($PSVersionTable.PSVersion)"
+    Write-Log "OS architecture: $env:PROCESSOR_ARCHITECTURE"
+
+    if ($env:PROCESSOR_ARCHITECTURE -notin @("AMD64", "ARM64")) {
+        Stop-Install -Message "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" -ExitCode 1
+    }
+
+    $Python = Install-PythonRuntime -Manifest $Manifest
+    Install-PythonPackages -Python $Python
+    Install-HermesDesktop -Manifest $Manifest
+    Install-HermesConfig -Manifest $Manifest
+    Install-HermitSkills
+    Initialize-HermitWorkspace
+    Test-InstallHealth -Python $Python
+
+    Write-Log "Hermit installer completed successfully"
+    exit 0
 }
 catch {
-    Stop-Install -Message "Manifest JSON parse failed: $($_.Exception.Message)" -ExitCode 1
+    $UnhandledMessage = $_.Exception.Message
+    try {
+        Write-Log -Level "ERROR" -Message "Unhandled installer error: $UnhandledMessage"
+        if (-not [string]::IsNullOrWhiteSpace($_.ScriptStackTrace)) {
+            Write-Log -Level "ERROR" -Message "Script stack: $($_.ScriptStackTrace)"
+        }
+    }
+    catch {
+        Write-Host "[Hermit][ERROR] Unhandled installer error: $UnhandledMessage"
+    }
+    exit 1
 }
-
-if ($Manifest.packageReady -ne $true) {
-    Write-Log -Level "WARN" -Message "Offline package is not ready. Set packageReady=true only after installers, wheels, config, and checksums are complete."
-    Write-Log -Level "WARN" -Message "No installation actions were performed."
-    exit 2
-}
-
-if (-not $DryRun -and -not (Test-IsAdministrator)) {
-    Stop-Install -Message "Administrator privileges are required for real installation. Use the bat entrypoint or rerun PowerShell as administrator." -ExitCode 1
-}
-
-if (-not $IsWindows -and $PSVersionTable.PSVersion.Major -ge 6) {
-    Stop-Install -Message "Hermit installer supports Windows only" -ExitCode 1
-}
-
-Write-Log "PowerShell version: $($PSVersionTable.PSVersion)"
-Write-Log "OS architecture: $env:PROCESSOR_ARCHITECTURE"
-
-if ($env:PROCESSOR_ARCHITECTURE -notin @("AMD64", "ARM64")) {
-    Stop-Install -Message "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" -ExitCode 1
-}
-
-$Python = Install-PythonRuntime -Manifest $Manifest
-Install-PythonPackages -Python $Python
-Install-HermesDesktop -Manifest $Manifest
-Install-HermesConfig -Manifest $Manifest
-Install-HermitSkills
-Initialize-HermitWorkspace
-Test-InstallHealth -Python $Python
-
-Write-Log "Hermit installer completed successfully"
-exit 0
